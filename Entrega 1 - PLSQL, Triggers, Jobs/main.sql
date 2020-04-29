@@ -117,6 +117,39 @@ BEGIN
     END;
 END P_REVISA;
 /
+
+/*
+PROCEDURE autoracle.p_revisa AS
+        BEGIN
+            DECLARE
+                CURSOR datos IS
+                    SELECT nif, telefono, Pr.nombre, email, Pi.cantidad, codref, feccaducidad
+                        FROM autoracle.pieza Pi
+                            JOIN autoracle.proveedor Pr ON proveedor_nif = nif;
+
+            BEGIN
+                FOR fila IN datos LOOP
+                    IF (sysdate - fila.feccaducidad) < 0 THEN
+                        EXECUTE IMMEDIATE
+                            'INSERT INTO autoracle.compra_futura
+                                VALUES ('
+                                ||fila.nif||','
+                                ||fila.telefono||','
+                                ||fila.nombre||','
+                                ||fila.email||','
+                                ||fila.cantidad||','
+                                ||fila.codref||');';
+
+                        COMMIT;
+                    END IF;
+
+                END LOOP;
+
+            END;
+
+        END p_revisa;
+/
+*/
 			
 -- [3]
 
