@@ -1,5 +1,5 @@
 -- Trabajo en Grupo (PL/SQL, Triggers, Jobs), a 29 Abril 2020.
--- Antonio J. Gal·n, Manuel Gonz·lez, Pablo RodrÌguez, Joaquin Terrasa
+-- Antonio J. Gal√°n, Manuel Gonz√°lez, Pablo Rodr√≠guez, Joaquin Terrasa
 
 -- { Por defecto, usamos el usuario "AUTORACLE" creado previamente en la BD }
 
@@ -84,7 +84,7 @@ GRANT SELECT
     TO r_mecanico, r_cliente;
 
 GRANT SELECT
-    ON autoracle.vehÌculo
+    ON autoracle.veh√≠culo
     TO r_mecanico, r_cliente;
 
 
@@ -97,7 +97,27 @@ CREATE TABLE COMPRA_FUTURA (
     CANTIDAD NUMBER(*, 0),
     CODREF_PIEZA NUMBER(*, 0));
 
-
+CREATE OR REPLACE PROCEDURE P_REVISA AS
+BEGIN
+    DECLARE
+        CURSOR C_COMPRUEBA IS SELECT CODREF,NOMBRE,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF FROM PIEZA;
+    BEGIN
+        FOR FILA IN C_COMPRUEBA LOOP
+            IF FILA.FECCADUCIDAD < SYSDATE THEN
+                INSERT INTO COMPRA_FUTURA VALUES (
+                        FILA.PROVEEDOR_NIF,
+                        (SELECT TELEFONO FROM PROVEEDOR WHERE NIF=FILA.PROVEEDOR_NIF),
+                        FILA.NOMBRE,
+                        (SELECT EMAIL FROM PROVEEDOR WHERE NIF=FILA.PROVEEDOR_NIF),
+                        FILA.CODREF,
+                        FILA.CANTIDAD
+                    ); 
+            END IF;
+        END LOOP;
+    END;
+END P_REVISA;
+/
+			
 -- [3]
 
 -- [4]
