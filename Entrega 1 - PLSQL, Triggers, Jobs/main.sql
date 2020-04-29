@@ -157,6 +157,63 @@ PROCEDURE autoracle.p_revisa AS
 
 -- [5]
 
+CREATE TABLE autoracle.fidelizacion(
+    "CLIENTE" VARCHAR2(16),
+    "DESCUENTO" NUMBER,
+    "ANNO" DATE
+);
+
+CREATE OR REPLACE PACKAGE autoracle.pck_gestion_descuentos AS
+    PROCEDURE p_calcular_descuento(cliente VARCHAR2,anno DATE);
+    PROCEDURE p_aplicar_descuento(cliente VARCHAR2,anno DATE);
+END pck_gestion_descuentos;
+/
+
+CREATE OR REPLACE PACKAGE BODY autoracle.pck_gestion_descuentos AS
+    PROCEDURE p_calcular_descuento(cliente VARCHAR2,anno DATE) AS
+    BEGIN
+        IF 
+        THEN
+            UPDATE fidelizacion F
+            SET F.descuento=F.descuento+0.01 
+            WHERE F.cliente=cliente;
+        END IF;
+        IF (SELECT fecha_concertada-fecha_solicitud 
+            FROM cita 
+            WHERE cliente_idcliente=cliente) > 5   
+        THEN
+            UPDATE fidelizacion F
+            SET F.descuento=F.descuento+0.01 
+            WHERE F.cliente=cliente;
+        END IF;
+        IF  (SELECT S.fecrealizacion-S.fecapertura 
+            FROM servicio S
+            WHERE S.idservicio IS IN
+            (SELECT S.idservicio FROM servicio S JOIN vehiculo V
+            ON S.vehiculo_numbastidor=V.numbastidor
+            WHERE S.vehiculo_numbastidor=V.numbastidor
+            AND V.cliente_idcliente=cliente))
+            >
+            (SELECT AVG(fecrealizacion-fecapertura) 
+            FROM servicio 
+            WHERE fecrealizacion IS NOT NULL)
+        THEN
+            UPDATE fidelizacion F
+            SET F.descuento=F.descuento+0.01 
+            WHERE F.cliente=cliente;
+        END IF;
+        IF (SELECT F.descuento FROM fidelizacion F WHERE F.cliente=cliente)>10 THEN
+            UPDATE fidelizacion F SET F.descuento=10 WHERE F.cliente=cliente;
+        END IF;
+    END p_calcular_descuento;
+    PROCEDURE p_aplicar_descuento(cliente VARCHAR2,anno DATE) AS
+    BEGIN
+    
+    END p_aplicar_descuento;
+END pck_gestion_descuentos;
+/
+			
+			
 -- [6]
 
 -- [7]
