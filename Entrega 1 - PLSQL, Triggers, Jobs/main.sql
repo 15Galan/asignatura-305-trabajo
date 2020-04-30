@@ -301,7 +301,7 @@ CREATE OR REPLACE TYPE MEDIA_MIN_MAX_UNITS AS OBJECT (
 
 -- Creamos las funciones y procedimientos del paquete (RECOMIENDO probar a definirlas fuera del paquete para ver si 
 -- compilan, y despues borrarlas)
-CREATE OR REPLACE PACKAGE BODY PKG_AUTORACLE_ANALISIS IS
+CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_AUTORACLE_ANALISIS IS
     -- 1.
     CREATE OR REPLACE FUNCTION F_CALCULAR_PIEZAS(codref IN VARCHAR2, year in VARCHAR2) RETURN MEDIA_MIN_MAX_UNITS AS
         resultado MEDIA_MIN_MAX_UNITS;
@@ -400,10 +400,22 @@ END pck_gestion_descuentos;
 			
 			
 -- [6] Crear un paquete en PL/SQL de gestión de empleados que incluya las operaciones para crear, borrar y modificar los
--- datos de un empleado. Hay que tener en cuenta que algunos empleados tienen un usuario y, por tanto, al insertar o 
--- modificar un empleado, si su usuario no es nulo, habrá que crear su usuario. Además, el paquete ofrecerá
--- procedimientos para bloquear/desbloquear cuentas de usuarios de modo individual.
+-- datos de un empleado.
+-- Hay que tener en cuenta que algunos empleados tienen un usuario y, por tanto, al insertar o modificar un empleado,
+-- si su usuario no es nulo, habrá que crear su usuario.
+-- Además, el paquete ofrecerá procedimientos para bloquear/desbloquear cuentas de usuarios de modo individual.
 -- También se debe disponer de una opción para bloquear y desbloquear todas las cuentas de los empleados.
+
+CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
+    PROCEDURE PR_CREAR_EMPLEADO;
+    PROCEDURE PR_MODIFICAR_EMPLEADO;
+    PROCEDURE PR_BLOQUEAR_DESBLOQUEAR_USUARIO;
+    PROCEDURE PR_BLOQUEAR_DESBLOQUEAR_ALL_USUARIOS;
+END;
+
+CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS IS
+    -- TO DO
+END;
 
 -- [7] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
 -- información de fidelización y los datos de su vehículo.
