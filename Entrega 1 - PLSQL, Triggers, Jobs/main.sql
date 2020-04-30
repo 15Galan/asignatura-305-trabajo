@@ -230,7 +230,11 @@ END;
 /
 
 
--- [2]
+-- [2] Crea una tabla denominada COMPRA_FUTURA que incluya el NIF, teléfono, nombre e email del proveedor,
+-- referencia de pieza y cantidad. Necesitamos un procedimiento P_REVISA que cuando se ejecute compruebe si las piezas
+-- han caducado. De esta forma, insertará en COMPRA_FUTURA aquellas piezas caducadas junto a los datos necesarios para
+-- realizar en el futuro la compra.
+
 CREATE TABLE COMPRA_FUTURA (
     PROVEEDOR_NIF VARCHAR2(16 BYTE),
     TELEFONO NUMBER(*, 0),
@@ -240,60 +244,37 @@ CREATE TABLE COMPRA_FUTURA (
     CODREF_PIEZA NUMBER(*, 0));
 
 CREATE OR REPLACE PROCEDURE P_REVISA AS
+    CURSOR C_COMPRUEBA IS
+        SELECT CODREF, NOMBRE, CANTIDAD, FECCADUCIDAD, PROVEEDOR_NIF
+        FROM PIEZA
+        WHERE FECCADUCIDAD < SYSDATE;
+    tlfo NUMBER(38);
+    email VARCHAR2(64);
 BEGIN
-    DECLARE
-        CURSOR C_COMPRUEBA IS SELECT CODREF,NOMBRE,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF FROM PIEZA;
-    BEGIN
-        FOR FILA IN C_COMPRUEBA LOOP
-            IF FILA.FECCADUCIDAD < SYSDATE THEN
-                INSERT INTO COMPRA_FUTURA VALUES (
-                        FILA.PROVEEDOR_NIF,
-                        (SELECT TELEFONO FROM PROVEEDOR WHERE NIF=FILA.PROVEEDOR_NIF),
-                        FILA.NOMBRE,
-                        (SELECT EMAIL FROM PROVEEDOR WHERE NIF=FILA.PROVEEDOR_NIF),
-                        FILA.CODREF,
-                        FILA.CANTIDAD
-                    ); 
-            END IF;
-        END LOOP;
-    END;
+    FOR FILA IN C_COMPRUEBA LOOP
+        SELECT TELEFONO INTO tlfo FROM PROVEEDOR WHERE NIF=FILA.PROVEEDOR_NIF;
+        SELECT EMAIL INTO email FROM PROVEEDOR WHERE NIF=FILA.PROVEEDOR_NIF;
+        INSERT INTO COMPRA_FUTURA
+            VALUES (FILA.PROVEEDOR_NIF, tlfo, FILA.NOMBRE, email, FILA.CODREF, FILA.CANTIDAD);
+    END LOOP;
 END P_REVISA;
 /
-
-/*
-PROCEDURE autoracle.p_revisa AS
-        BEGIN
-            DECLARE
-                CURSOR datos IS
-                    SELECT nif, telefono, Pr.nombre, email, Pi.cantidad, codref, feccaducidad
-                        FROM autoracle.pieza Pi
-                            JOIN autoracle.proveedor Pr ON proveedor_nif = nif;
-
-            BEGIN
-                FOR fila IN datos LOOP
-                    IF (sysdate - fila.feccaducidad) < 0 THEN
-                        EXECUTE IMMEDIATE
-                            'INSERT INTO autoracle.compra_futura
-                                VALUES ('
-                                ||fila.nif||','
-                                ||fila.telefono||','
-                                ||fila.nombre||','
-                                ||fila.email||','
-                                ||fila.cantidad||','
-                                ||fila.codref||');';
-
-                        COMMIT;
-                    END IF;
-
-                END LOOP;
-
-            END;
-
-        END p_revisa;
-/
-*/
 			
--- [3]
+-- [3] Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO, TRIMESTRE, IVA_TOTAL siendo trimestre 
+-- un número de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre). Dar permiso
+-- de selección a los Administrativos.
+
+-- ||||| ESTA MAL! |||||
+
+CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
+    SELECT UNIQUE(TO_CHAR(FECEMISION, 'YYYY')) AS "año",
+           TO_CHAR(FECEMISION, 'Q') AS "trimestre",
+           SUM(IVA) AS "iva_total"
+    FROM AUTORACLE.FACTURA
+    GROUP BY FECEMISION;
+
+SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE;
+SELECT * FROM AUTORACLE.FACTURA;
 
 -- [4]
 
