@@ -311,10 +311,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_AUTORACLE_ANALISIS IS
 
     -- 2. Es una funcion, pero entiendo que si se usa para TODOS los servicios, entonces es mejor un Procedimiento.
     -- Lo aclararia en el foro.
-    CREATE OR REPLACE FUNCTION F_CALCULAR_TIEMPOS RETURN QUE_WEA_SE_DEVUELVE_PENDEJO AS
-        dummy_var NUMBER;
+    CREATE OR REPLACE FUNCTION F_CALCULAR_TIEMPOS
+        RETURNS TABLE(mediaDias NUMBER, mediaHoras NUMBER)
     BEGIN
-        DBMS_OUTPUT.PUT_LINE('Do nothing');
+        RETURN QUERY
+            SELECT SUM((s.FECREALIZACION - s.FECRECEPCION)) / COUNT(s.IDSERVICIO) AS MediaDias,
+                   SUM(r.HORAS) / COUNT(s.IDSERVICIO) AS MediaHoras
+            FROM servicio s
+            JOIN reparacion r ON s.IDSERVICIO = r.IDSERVICIO;
     END;
 
     -- 3. VALE! Creo que este procedimiento usa las dos funciones de arriba para cada servicio. Entonces las funciones
@@ -327,7 +331,6 @@ CREATE OR REPLACE PACKAGE BODY PKG_AUTORACLE_ANALISIS IS
         END LOOP;
     END;
 END;
-
 
 -- [5] Añadir al modelo una tabla FIDELIZACIÓN que permite almacenar un descuento por cliente y año. Crear un paquete en
 -- PL/SQL de gestión de descuentos.
