@@ -1,17 +1,16 @@
 -- Trabajo en Grupo (PL/SQL, Triggers, Jobs), a 29 Abril 2020.
--- Antonio J. GalÃ¡n, Manuel GonzÃ¡lez, Pablo RodrÃ­guez, Joaquin Terrasa
+-- Antonio J. Galán, Manuel González, Pablo Rodríguez, Joaquin Terrasa
 
 -- { Por defecto, usamos el usuario "AUTORACLE" creado previamente en la BD }
 
--- [1] Modificar el modelo (si es necesario) para almacenar el usuario de Oracle que cada empleado o cliente pueda
--- utilizar para conectarse a la base de datos. AdemÃ¡s, habrÃ¡ de crear roles dependiendo del tipo de usuario:
---   Administrativo, con acceso a toda la BD;
---   Empleado, con acceso sÃ³lo a aquellos objetos que precise para su trabajo
---     (y nunca podrÃ¡ acceder a los datos de otros empleados);
---   Cliente, con acceso sÃ³lo a los datos propios, de su vehÃ­culo y de sus servicios.
--- Los roles se llamarÃ¡n R_ADMINISTRATIVO, R_MECANICO, R_CLIENTE.
-
--- ||||| desde SYSDBA |||||
+/* [1] (desde SYSDBA)
+Modificar el modelo (si es necesario) para almacenar el usuario de Oracle que cada empleado o cliente pueda
+utilizar para conectarse a la base de datos. Además, habrá de crear roles dependiendo del tipo de usuario:
+ * Administrativo, con acceso a toda la BD;
+ * Empleado, con acceso solo a aquellos objetos que precise para su trabajo (y nunca podrá acceder a los datos de otros empleados);
+ * Cliente, con acceso solo a los datos propios, de su vehículo y de sus servicios.
+Los roles se llamarán R_ADMINISTRATIVO, R_MECANICO, R_CLIENTE.
+*/
 
 -- Antes de comenzar, asignaremos USUARIO1 y USUARIO2 (de las practicas anteriores) a las tablas EMPLEADO y CLIENTE
 -- respectivamente, para poder probar los cambios que vamos a realizar en la BD.
@@ -70,7 +69,7 @@ GRANT SELECT
 GRANT SELECT
     ON autoracle.necesita
     TO r_mecanico;
-    
+
 GRANT SELECT
     ON autoracle.pieza
     TO r_mecanico;
@@ -94,7 +93,7 @@ GRANT SELECT
 -- agregamos una politica VPD (ver practica 3 / tema 2) para limitar el acceso a los datos de cada empleado
 -- agregamos restricciones a las tablas "EMPLEADO", "VACACIONES", "FACTURA" y "TRABAJA".
 SELECT * FROM ALL_CONSTRAINTS WHERE CONSTRAINT_NAME LIKE '%EMPLEADO%';
--- permite precisar quÃ© tablas dependen de EMPLEADO_ID
+-- permite precisar qué tablas dependen de EMPLEADO_ID
 
 -- devuelve un filtro para la clausula WHERE
 -- https://www.techonthenet.com/oracle/functions/sys_context.php
@@ -156,23 +155,23 @@ GRANT SELECT
 GRANT SELECT
     ON autoracle.cita
     TO r_mecanico, r_cliente;
-    
+
 GRANT SELECT
     ON autoracle.factura
     TO r_mecanico, r_cliente;
-    
+
 GRANT SELECT
     ON autoracle.servicio
     TO r_mecanico, r_cliente;
 
 GRANT SELECT
-    ON autoracle.vehÃ­culo
+    ON autoracle.vehículo
     TO r_mecanico, r_cliente;
 
 -- agregamos una politica VPD (ver practica 3 / tema 2) para limitar el acceso a los datos de cada cliente
 -- agregamos restricciones a las tablas "CLIENTE", "CITA", "FACTURA" y "VEHICULO".
 SELECT * FROM ALL_CONSTRAINTS WHERE CONSTRAINT_NAME LIKE '%CLIENTE%';
--- permite precisar quÃ© tablas dependen de EMPLEADO_ID
+-- permite precisar qué tablas dependen de EMPLEADO_ID
 
 -- devuelve un filtro para la clausula WHERE
 -- https://www.techonthenet.com/oracle/functions/sys_context.php
@@ -230,10 +229,12 @@ END;
 /
 
 
--- [2] Crea una tabla denominada COMPRA_FUTURA que incluya el NIF, telÃ©fono, nombre e email del proveedor,
--- referencia de pieza y cantidad. Necesitamos un procedimiento P_REVISA que cuando se ejecute compruebe si las piezas
--- han caducado. De esta forma, insertarÃ¡ en COMPRA_FUTURA aquellas piezas caducadas junto a los datos necesarios para
--- realizar en el futuro la compra.
+
+/* [2]
+Crea una tabla denominada COMPRA_FUTURA que incluya el NIF, teléfono, nombre e email del proveedor, referencia de pieza y
+cantidad. Necesitamos un procedimiento P_REVISA que cuando se ejecute compruebe si las piezas han caducado. De esta forma,
+insertará en COMPRA_FUTURA aquellas piezas caducadas junto a los datos necesarios para realizar en el futuro la compra.
+*/
 
 CREATE TABLE COMPRA_FUTURA (
     PROVEEDOR_NIF VARCHAR2(16 BYTE),
@@ -259,15 +260,19 @@ BEGIN
     END LOOP;
 END P_REVISA;
 /
-			
--- [3] Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÃ‘O, TRIMESTRE, IVA_TOTAL siendo trimestre 
--- un nÃºmero de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre). Dar permiso
--- de selecciÃ³n a los Administrativos.
 
--- ||||| ESTA MAL! |||||
+
+
+/* [3]
+Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO, TRIMESTRE, IVA_TOTAL siendo trimestre
+un número de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
+Dar permiso de selección a los Administrativos.
+*/
+
+-- ||||| ¡ESTA MAL! |||||
 
 CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
-    SELECT UNIQUE(TO_CHAR(FECEMISION, 'YYYY')) AS "aÃ±o",
+    SELECT UNIQUE(TO_CHAR(FECEMISION, 'YYYY')) AS "año",
            TO_CHAR(FECEMISION, 'Q') AS "trimestre",
            SUM(IVA) AS "iva_total"
     FROM AUTORACLE.FACTURA
@@ -276,14 +281,18 @@ CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
 SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE;
 SELECT * FROM AUTORACLE.FACTURA;
 
--- [4] Crear un paquete en PL/SQL de anÃ¡lisis de datos.
---       1. La funciÃ³n F_Calcular_Piezas devolverÃ¡ la media, mÃ­nimo y mÃ¡ximo nÃºmero de unidades compradas (en cada lote)
---          de una determinada pieza en un aÃ±o concreto.
---       2. La funciÃ³n F_Calcular_Tiempos devolverÃ¡ la media de dÃ­as en las que se termina un servicio
---          (Fecha de realizaciÃ³n â€“ Fecha de entrada en taller) asÃ­ como la media de las horas de mano de obra de los
---          servicios de ReparaciÃ³n.
---       3. El procedimiento P_Recompensa encuentra el servicio proporcionado mÃ¡s rÃ¡pido y mÃ¡s lento (en dÃ­as) y a los
---          empleados involucrados los recompensa con un +/- 5% en su sueldo base respectivamente.
+
+
+/* [4]
+Crear un paquete en PL/SQL de análisis de datos que contenga:
+    1.  La función F_Calcular_Piezas: devolverá la media, mínimo y máximo número de unidades compradas (en cada lote)
+        de una determinada pieza en un año concreto.
+    2.  La función F_Calcular_Tiempos: devolverá la media de días en las que se termina un servicio
+        (Fecha de realización - Fecha de entrada en taller) así como la media de las horas de mano de obra de los
+        servicios de Reparación.
+    3.  El procedimiento P_Recompensa: encuentra el servicio proporcionado más rápido y más lento (en días) y a los
+        empleados involucrados los recompensa con un +/- 5% en su sueldo base respectivamente.
+*/
 
 -- Primero, agrupamos las funciones y procedimientos en un paquete
 -- http://www.rebellionrider.com/how-to-create-pl-sql-packages-in-oracle-database/
@@ -299,14 +308,14 @@ CREATE OR REPLACE TYPE MEDIA_MIN_MAX_UNITS AS OBJECT (
     minimo NUMBER,
     maximo NUMBER);
 
--- Creamos las funciones y procedimientos del paquete (RECOMIENDO probar a definirlas fuera del paquete para ver si 
+-- Creamos las funciones y procedimientos del paquete (RECOMIENDO probar a definirlas fuera del paquete para ver si
 -- compilan, y despues borrarlas)
 CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_AUTORACLE_ANALISIS IS
     -- 1.
     CREATE OR REPLACE FUNCTION F_CALCULAR_PIEZAS(codref IN VARCHAR2, year in VARCHAR2) RETURN MEDIA_MIN_MAX_UNITS AS
         resultado MEDIA_MIN_MAX_UNITS;
     BEGIN
-        -- Falta por hacer
+        -- PENDIENTE
     END;
 
     -- 2. Es una funcion, pero entiendo que si se usa para TODOS los servicios, entonces es mejor un Procedimiento.
@@ -322,7 +331,7 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_AUTORACLE_ANALISIS IS
     END;
 
     -- 3. VALE! Creo que este procedimiento usa las dos funciones de arriba para cada servicio. Entonces las funciones
-    -- van para cada servicio (No se explica bien en el enunciado).
+    -- van para cada servicio (no se explica bien en el enunciado).
     CREATE OR REPLACE PROCEDURE P_RECOMPENSA AS
         dummy_var NUMBER;
     BEGIN
@@ -332,15 +341,19 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_AUTORACLE_ANALISIS IS
     END;
 END;
 
--- [5] AÃ±adir al modelo una tabla FIDELIZACIÃ“N que permite almacenar un descuento por cliente y aÃ±o. Crear un paquete en
--- PL/SQL de gestiÃ³n de descuentos.
---       1. El procedimiento P_Calcular_Descuento, tomarÃ¡ un cliente y un aÃ±o y calcularÃ¡ el descuento del que podrÃ¡
---          disfrutar el aÃ±o siguiente. Para ello, hasta un mÃ¡ximo del 10%, irÃ¡ incrementando el descuento en un 1%,
---          por cada una de las siguientes acciones:
---              1. Por cada servicio pagado por el cliente.
---              2. Por cada ocasiÃ³n en la que el cliente tuvo que esperar mÃ¡s de 5 dÃ­as desde que solicitÃ³ la cita hasta
---                 que se concertÃ³.
---              3. Por cada servicio proporcionado en el que tuvo que esperar mÃ¡s de la media de todos los servicios.
+
+
+/* [5]
+Añadir al modelo una tabla FIDELIZACIÓN que permite almacenar un descuento por cliente y año.
+Crear un paquete en PL/SQL de gestión de descuentos.
+    El procedimiento P_Calcular_Descuento, tomará un cliente y un año y calculará el descuento del que podrá
+    disfrutar el año siguiente. Para ello, hasta un máximo del 10%, irá incrementando el descuento en un 1%,
+    por cada una de las siguientes acciones:
+        1.  Por cada servicio pagado por el cliente.
+        2.  Por cada ocasión en la que el cliente tuvo que esperar más de 5 días desde que solicitó la cita hasta
+            que se concertó.
+        3.  Por cada servicio proporcionado en el que tuvo que esperar más de la media de todos los servicios.
+*/
 
 CREATE TABLE autoracle.fidelizacion(
     "CLIENTE" VARCHAR2(16),
@@ -357,21 +370,21 @@ END pck_gestion_descuentos;
 CREATE OR REPLACE PACKAGE BODY autoracle.pck_gestion_descuentos AS
     PROCEDURE p_calcular_descuento(cliente VARCHAR2,anno DATE) AS
     BEGIN
-        IF 
+        IF
         THEN
             UPDATE fidelizacion F
-            SET F.descuento=F.descuento+0.01 
+            SET F.descuento=F.descuento+0.01
             WHERE F.cliente=cliente;
         END IF;
-        IF (SELECT fecha_concertada-fecha_solicitud 
-            FROM cita 
-            WHERE cliente_idcliente=cliente) > 5   
+        IF (SELECT fecha_concertada-fecha_solicitud
+            FROM cita
+            WHERE cliente_idcliente=cliente) > 5
         THEN
             UPDATE fidelizacion F
-            SET F.descuento=F.descuento+0.01 
+            SET F.descuento=F.descuento+0.01
             WHERE F.cliente=cliente;
         END IF;
-        IF  (SELECT S.fecrealizacion-S.fecapertura 
+        IF  (SELECT S.fecrealizacion-S.fecapertura
             FROM servicio S
             WHERE S.idservicio IS IN
             (SELECT S.idservicio FROM servicio S JOIN vehiculo V
@@ -379,12 +392,12 @@ CREATE OR REPLACE PACKAGE BODY autoracle.pck_gestion_descuentos AS
             WHERE S.vehiculo_numbastidor=V.numbastidor
             AND V.cliente_idcliente=cliente))
             >
-            (SELECT AVG(fecrealizacion-fecapertura) 
-            FROM servicio 
+            (SELECT AVG(fecrealizacion-fecapertura)
+            FROM servicio
             WHERE fecrealizacion IS NOT NULL)
         THEN
             UPDATE fidelizacion F
-            SET F.descuento=F.descuento+0.01 
+            SET F.descuento=F.descuento+0.01
             WHERE F.cliente=cliente;
         END IF;
         IF (SELECT F.descuento FROM fidelizacion F WHERE F.cliente=cliente)>10 THEN
@@ -393,18 +406,20 @@ CREATE OR REPLACE PACKAGE BODY autoracle.pck_gestion_descuentos AS
     END p_calcular_descuento;
     PROCEDURE p_aplicar_descuento(cliente VARCHAR2,anno DATE) AS
     BEGIN
-    
+
     END p_aplicar_descuento;
 END pck_gestion_descuentos;
 /
-			
-			
--- [6] Crear un paquete en PL/SQL de gestiÃ³n de empleados que incluya las operaciones para crear, borrar y modificar los
--- datos de un empleado.
--- Hay que tener en cuenta que algunos empleados tienen un usuario y, por tanto, al insertar o modificar un empleado,
--- si su usuario no es nulo, habrÃ¡ que crear su usuario.
--- AdemÃ¡s, el paquete ofrecerÃ¡ procedimientos para bloquear/desbloquear cuentas de usuarios de modo individual.
--- TambiÃ©n se debe disponer de una opciÃ³n para bloquear y desbloquear todas las cuentas de los empleados.
+
+
+
+/* [6]
+Crear un paquete en PL/SQL de gestión de empleados que incluya las operaciones para crear, borrar y modificar los datos de un
+empleado. Hay que tener en cuenta que algunos empleados tienen un usuario y, por tanto, al insertar o modificar un empleado,
+si su usuario no es nulo, habrá que crear su usuario.
+Además, el paquete ofrecerá procedimientos para bloquear/desbloquear cuentas de usuarios de modo individual.
+También se debe disponer de una opción para bloquear y desbloquear todas las cuentas de los empleados.
+*/
 
 CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
     PROCEDURE PR_CREAR_EMPLEADO;
@@ -414,11 +429,11 @@ CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
 END;
 
 CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS IS
-    -- TO DO
+    -- PENDIENTE
 END;
 
 -- [7] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
--- informaciÃ³n de fidelizaciÃ³n y los datos de su vehÃ­culo.
+-- información de fidelización y los datos de su vehículo.
 
 CREATE OR REPLACE TRIGGER TR_Eliminar_Cliente_Fidelizado
 BEFORE DELETE ON CLIENTE FOR EACH ROW
@@ -428,20 +443,18 @@ BEGIN
 END;
 /
 
--- [8] Crear un JOB que ejecute el procedimiento P_REVISA todos los dÃ­as a las 21:00. Crear otro JOB que, anualmente 
+-- [8] Crear un JOB que ejecute el procedimiento P_REVISA todos los días a las 21:00. Crear otro JOB que, anualmente
 -- (el 31 de diciembre a las 23.55), llame a P_Recompensa.
 
-	BEGIN
-		DBMS_SCHEDULER.CREATE_JOB
-		(
-			job_name => 'Llamada_A_Recompensas',
-			job_type => 'PLSQL_BLOCK',
-			job_action => 'BEGIN PROCEDURE P_Recompensa END;',
-			start_date => TO_DATE('2020-12-31 23:55:00' , 'YYYY-MM-DD HH24:MI:SS'),
-			repeat_interval => 'FREQ = YEARLY; INTERVAL=1',
-			enabled => TRUE,
-			comments => 'Llama al procedimiento P_Recompensa anualmente el 31 de Diciembre a las 23.55'
-		):
+BEGIN
+    DBMS_SCHEDULER.CREATE_JOB (
+        job_name => 'Llamada_A_Recompensas',
+        job_type => 'PLSQL_BLOCK',
+        job_action => 'BEGIN PROCEDURE P_Recompensa END;',
+        start_date => TO_DATE('2020-12-31 23:55:00' , 'YYYY-MM-DD HH24:MI:SS'),
+        repeat_interval => 'FREQ = YEARLY; INTERVAL=1',
+        enabled => TRUE,
+        comments => 'Llama al procedimiento P_Recompensa anualmente el 31 de Diciembre a las 23.55');
 
-	END;
+END;
 /
