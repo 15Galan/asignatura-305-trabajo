@@ -1,4 +1,4 @@
--- Trabajo en Grupo (PL/SQL, Triggers, Jobs), a 29 Abril 2020.
+P_-- Trabajo en Grupo (PL/SQL, Triggers, Jobs), a 29 Abril 2020.
 -- Antonio J. Galán, Manuel González, Pablo Rodríguez, Joaquin Terrasa
 
 -- { Por defecto, usamos el usuario "AUTORACLE" creado previamente en la BD }
@@ -296,6 +296,8 @@ PROCEDURE autoracle.p_revisa AS
 -- [3]
 
 -- [4]
+	
+	CREATE OR REPLACE
 
 -- [5]
 
@@ -361,3 +363,18 @@ END pck_gestion_descuentos;
 -- [7]
 
 -- [8]
+
+	BEGIN
+		DBMS_SCHEDULER.CREATE_JOB
+		(
+			job_name => 'Llamada_A_Recompensas',
+			job_type => 'PLSQL_BLOCK',
+			job_action => 'BEGIN PROCEDURE P_Recompensa END;',
+			start_date => TO_DATE('2020-12-31 23:55:00' , 'YYYY-MM-DD HH24:MI:SS'),
+			repeat_interval => 'FREQ = YEARLY; INTERVAL=1',
+			enabled => TRUE,
+			comments => 'Llama al procedimiento P_Recompensa anualmente el 31 de Diciembre a las 23.55'
+		):
+
+	END;
+/
