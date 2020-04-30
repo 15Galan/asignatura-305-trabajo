@@ -1,15 +1,15 @@
 -- Trabajo en Grupo (PL/SQL, Triggers, Jobs), a 29 Abril 2020.
--- Antonio J. Galán, Manuel González, Pablo Rodríguez, Joaquin Terrasa
+-- Antonio J. Galan, Manuel Gonzalez, Pablo Rodriguez, Joaquin Terrasa
 
 -- { Por defecto, usamos el usuario "AUTORACLE" creado previamente en la BD }
 
 /* [1] (desde SYSDBA)
 Modificar el modelo (si es necesario) para almacenar el usuario de Oracle que cada empleado o cliente pueda
-utilizar para conectarse a la base de datos. Además, habrá de crear roles dependiendo del tipo de usuario:
+utilizar para conectarse a la base de datos. Ademas, habra de crear roles dependiendo del tipo de usuario:
  * Administrativo, con acceso a toda la BD;
- * Empleado, con acceso solo a aquellos objetos que precise para su trabajo (y nunca podrá acceder a los datos de otros empleados);
- * Cliente, con acceso solo a los datos propios, de su vehículo y de sus servicios.
-Los roles se llamarán R_ADMINISTRATIVO, R_MECANICO, R_CLIENTE.
+ * Empleado, con acceso solo a aquellos objetos que precise para su trabajo (y nunca podra acceder a los datos de otros empleados);
+ * Cliente, con acceso solo a los datos propios, de su vehiculo y de sus servicios.
+Los roles se llamaran R_ADMINISTRATIVO, R_MECANICO, R_CLIENTE.
 */
 
 -- Antes de comenzar, asignaremos USUARIO1 y USUARIO2 (de las practicas anteriores) a las tablas EMPLEADO y CLIENTE
@@ -93,7 +93,7 @@ GRANT SELECT
 -- agregamos una politica VPD (ver practica 3 / tema 2) para limitar el acceso a los datos de cada empleado
 -- agregamos restricciones a las tablas "EMPLEADO", "VACACIONES", "FACTURA" y "TRABAJA".
 SELECT * FROM ALL_CONSTRAINTS WHERE CONSTRAINT_NAME LIKE '%EMPLEADO%';
--- permite precisar qué tablas dependen de EMPLEADO_ID
+-- permite precisar que tablas dependen de EMPLEADO_ID
 
 -- devuelve un filtro para la clausula WHERE
 -- https://www.techonthenet.com/oracle/functions/sys_context.php
@@ -165,13 +165,13 @@ GRANT SELECT
     TO r_mecanico, r_cliente;
 
 GRANT SELECT
-    ON autoracle.vehículo
+    ON autoracle.vehiculo
     TO r_mecanico, r_cliente;
 
 -- agregamos una politica VPD (ver practica 3 / tema 2) para limitar el acceso a los datos de cada cliente
 -- agregamos restricciones a las tablas "CLIENTE", "CITA", "FACTURA" y "VEHICULO".
 SELECT * FROM ALL_CONSTRAINTS WHERE CONSTRAINT_NAME LIKE '%CLIENTE%';
--- permite precisar qué tablas dependen de EMPLEADO_ID
+-- permite precisar que tablas dependen de EMPLEADO_ID
 
 -- devuelve un filtro para la clausula WHERE
 -- https://www.techonthenet.com/oracle/functions/sys_context.php
@@ -231,9 +231,9 @@ END;
 
 
 /* [2]
-Crea una tabla denominada COMPRA_FUTURA que incluya el NIF, teléfono, nombre e email del proveedor, referencia de pieza y
+Crea una tabla denominada COMPRA_FUTURA que incluya el NIF, telefono, nombre e email del proveedor, referencia de pieza y
 cantidad. Necesitamos un procedimiento P_REVISA que cuando se ejecute compruebe si las piezas han caducado. De esta forma,
-insertará en COMPRA_FUTURA aquellas piezas caducadas junto a los datos necesarios para realizar en el futuro la compra.
+insertara en COMPRA_FUTURA aquellas piezas caducadas junto a los datos necesarios para realizar en el futuro la compra.
 */
 
 CREATE TABLE COMPRA_FUTURA (
@@ -264,15 +264,15 @@ END P_REVISA;
 
 
 /* [3]
-Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO, TRIMESTRE, IVA_TOTAL siendo trimestre
-un número de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
-Dar permiso de selección a los Administrativos.
+Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÃ‘O, TRIMESTRE, IVA_TOTAL siendo trimestre
+un numero de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
+Dar permiso de seleccion a los Administrativos.
 */
 
--- ||||| ¡ESTA MAL! |||||
+-- ||||| ESTA MAL! |||||
 
 CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
-    SELECT UNIQUE(TO_CHAR(FECEMISION, 'YYYY')) AS "año",
+    SELECT UNIQUE(TO_CHAR(FECEMISION, 'YYYY')) AS "aÃ±o",
            TO_CHAR(FECEMISION, 'Q') AS "trimestre",
            SUM(IVA) AS "iva_total"
     FROM AUTORACLE.FACTURA
@@ -284,13 +284,13 @@ SELECT * FROM AUTORACLE.FACTURA;
 
 
 /* [4]
-Crear un paquete en PL/SQL de análisis de datos que contenga:
-    1.  La función F_Calcular_Piezas: devolverá la media, mínimo y máximo número de unidades compradas (en cada lote)
-        de una determinada pieza en un año concreto.
-    2.  La función F_Calcular_Tiempos: devolverá la media de días en las que se termina un servicio
-        (Fecha de realización - Fecha de entrada en taller) así como la media de las horas de mano de obra de los
-        servicios de Reparación.
-    3.  El procedimiento P_Recompensa: encuentra el servicio proporcionado más rápido y más lento (en días) y a los
+Crear un paquete en PL/SQL de analisis de datos que contenga:
+    1.  La funcion F_Calcular_Piezas: devolvera la media, minimo y maximo numero de unidades compradas (en cada lote)
+        de una determinada pieza en un aÃ±o concreto.
+    2.  La funcion F_Calcular_Tiempos: devolvera la media de dias en las que se termina un servicio
+        (Fecha de realizacion - Fecha de entrada en taller) asi como la media de las horas de mano de obra de los
+        servicios de Reparacion.
+    3.  El procedimiento P_Recompensa: encuentra el servicio proporcionado mas rapido y mas lento (en dias) y a los
         empleados involucrados los recompensa con un +/- 5% en su sueldo base respectivamente.
 */
 
@@ -344,15 +344,15 @@ END;
 
 
 /* [5]
-Añadir al modelo una tabla FIDELIZACIÓN que permite almacenar un descuento por cliente y año.
-Crear un paquete en PL/SQL de gestión de descuentos.
-    El procedimiento P_Calcular_Descuento, tomará un cliente y un año y calculará el descuento del que podrá
-    disfrutar el año siguiente. Para ello, hasta un máximo del 10%, irá incrementando el descuento en un 1%,
+AÃ±adir al modelo una tabla FIDELIZACIoN que permite almacenar un descuento por cliente y aÃ±o.
+Crear un paquete en PL/SQL de gestion de descuentos.
+    El procedimiento P_Calcular_Descuento, tomara un cliente y un aÃ±o y calculara el descuento del que podra
+    disfrutar el aÃ±o siguiente. Para ello, hasta un maximo del 10%, ira incrementando el descuento en un 1%,
     por cada una de las siguientes acciones:
         1.  Por cada servicio pagado por el cliente.
-        2.  Por cada ocasión en la que el cliente tuvo que esperar más de 5 días desde que solicitó la cita hasta
-            que se concertó.
-        3.  Por cada servicio proporcionado en el que tuvo que esperar más de la media de todos los servicios.
+        2.  Por cada ocasion en la que el cliente tuvo que esperar mas de 5 dias desde que solicito la cita hasta
+            que se concerto.
+        3.  Por cada servicio proporcionado en el que tuvo que esperar mas de la media de todos los servicios.
 */
 
 CREATE TABLE autoracle.fidelizacion(
@@ -414,11 +414,11 @@ END pck_gestion_descuentos;
 
 
 /* [6]
-Crear un paquete en PL/SQL de gestión de empleados que incluya las operaciones para crear, borrar y modificar los datos de un
+Crear un paquete en PL/SQL de gestion de empleados que incluya las operaciones para crear, borrar y modificar los datos de un
 empleado. Hay que tener en cuenta que algunos empleados tienen un usuario y, por tanto, al insertar o modificar un empleado,
-si su usuario no es nulo, habrá que crear su usuario.
-Además, el paquete ofrecerá procedimientos para bloquear/desbloquear cuentas de usuarios de modo individual.
-También se debe disponer de una opción para bloquear y desbloquear todas las cuentas de los empleados.
+si su usuario no es nulo, habra que crear su usuario.
+Ademas, el paquete ofrecera procedimientos para bloquear/desbloquear cuentas de usuarios de modo individual.
+Tambien se debe disponer de una opcion para bloquear y desbloquear todas las cuentas de los empleados.
 */
 
 CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
@@ -433,7 +433,7 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS IS
 END;
 
 -- [7] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
--- información de fidelización y los datos de su vehículo.
+-- informacion de fidelizacion y los datos de su vehiculo.
 
 CREATE OR REPLACE TRIGGER TR_Eliminar_Cliente_Fidelizado
 BEFORE DELETE ON CLIENTE FOR EACH ROW
@@ -443,7 +443,7 @@ BEGIN
 END;
 /
 
--- [8] Crear un JOB que ejecute el procedimiento P_REVISA todos los días a las 21:00. Crear otro JOB que, anualmente
+-- [8] Crear un JOB que ejecute el procedimiento P_REVISA todos los dias a las 21:00. Crear otro JOB que, anualmente
 -- (el 31 de diciembre a las 23.55), llame a P_Recompensa.
 
 BEGIN
