@@ -408,6 +408,14 @@ END pck_gestion_descuentos;
 -- [7] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
 -- información de fidelización y los datos de su vehículo.
 
+CREATE OR REPLACE TRIGGER TR_Eliminar_Cliente_Fidelizado
+BEFORE DELETE ON CLIENTE FOR EACH ROW
+BEGIN
+	DELETE FROM FIDELIZACION WHERE CLIENTE = :old.IDCLIENTE;
+	DELETE FROM VEHICULO WHERE CLIENTE_IDCLIENTE = :old.IDCLIENTE;
+END;
+/
+
 -- [8] Crear un JOB que ejecute el procedimiento P_REVISA todos los días a las 21:00. Crear otro JOB que, anualmente 
 -- (el 31 de diciembre a las 23.55), llame a P_Recompensa.
 
