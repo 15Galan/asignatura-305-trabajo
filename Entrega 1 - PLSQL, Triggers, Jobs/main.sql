@@ -261,9 +261,17 @@ BEGIN
 END P_REVISA;
 /
 
-
-
 /* [3]
+Añadir dos campos a la tabla factura: iva calculado y total.
+Implementar un procedimiento P_CALCULA_FACT
+que recorre los datos necesarios de las piezas utilizadas y 
+el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
+*/
+
+ALTER TABLE factura ADD (iva_calculado NUMBER,iva_total NUMBER);			
+			
+			
+/* [4]
 Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO, TRIMESTRE, IVA_TOTAL siendo trimestre
 un numero de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
 Dar permiso de seleccion a los Administrativos.
@@ -283,7 +291,7 @@ SELECT * FROM AUTORACLE.FACTURA;
 
 
 
-/* [4]
+/* [5]
 Crear un paquete en PL/SQL de analisis de datos que contenga:
     1.  La funcion F_Calcular_Piezas: devolvera la media, minimo y maximo numero de unidades compradas (en cada lote)
         de una determinada pieza en un año concreto.
@@ -343,7 +351,7 @@ END;
 
 
 
-/* [5]
+/* [6]
 Añadir al modelo una tabla FIDELIZACIoN que permite almacenar un descuento por cliente y año.
 Crear un paquete en PL/SQL de gestion de descuentos.
     El procedimiento P_Calcular_Descuento, tomara un cliente y un año y calculara el descuento del que podra
@@ -413,7 +421,7 @@ END pck_gestion_descuentos;
 
 
 
-/* [6]
+/* [7]
 Crear un paquete en PL/SQL de gestion de empleados que incluya las operaciones para crear, borrar y modificar los datos de un
 empleado. Hay que tener en cuenta que algunos empleados tienen un usuario y, por tanto, al insertar o modificar un empleado,
 si su usuario no es nulo, habra que crear su usuario.
@@ -432,7 +440,7 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS IS
     -- PENDIENTE
 END;
 
--- [7] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
+-- [8] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
 -- informacion de fidelizacion y los datos de su vehiculo.
 
 CREATE OR REPLACE TRIGGER TR_Eliminar_Cliente_Fidelizado
@@ -443,7 +451,7 @@ BEGIN
 END;
 /
 
--- [8] Crear un JOB que ejecute el procedimiento P_REVISA todos los dias a las 21:00. Crear otro JOB que, anualmente
+-- [9] Crear un JOB que ejecute el procedimiento P_REVISA todos los dias a las 21:00. Crear otro JOB que, anualmente
 -- (el 31 de diciembre a las 23.55), llame a P_Recompensa.
 
 BEGIN
