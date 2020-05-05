@@ -440,6 +440,29 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS IS
     -- PENDIENTE
 END;
 
+--El procedimiento crea un Usuario previo con el nombre del empleado a crear, luego de crear el usuario, crea el EMPLEADO--
+--El empleado se crea con sueldo base 1500 por defecto--
+
+--EL PROCEDIMIENTO FUNCIONA. FALTARIA COMPROBAR ANTES DE CREAR EL USUARIO, SI EXISTE YA EL USUARIO CON EL NOMBRE QUE SE PASA COMO PARAMETRO EN EL PROCEDIMIENTO--
+
+CREATE OR REPLACE PROCEDURE PR_CREAR_EMPLEADO(nombre VARCHAR2) IS
+
+identificacion NUMBER;
+
+sentencia VARCHAR2(500);
+
+BEGIN
+	sentencia := 'CREATE USER ' || nombre || ' IDENTIFIED BY ' || nombre || ' DEFAULT TABLESPACE TS_AUTORACLE';
+DBMS_OUTPUT.PUT_LINE(sentencia);
+EXECUTE IMMEDIATE sentencia;
+
+SELECT USER_ID INTO identificacion FROM ALL_USERS WHERE USERNAME = nombre;
+
+INSERT INTO EMPLEADO(IDEMPLEADO, NOMBRE, FECENTRADA, DESPEDIDO,SUELDOBASE) VALUES (identificacion, nombre, sysdate, 0, 1500);
+
+END;
+/
+
 -- [8] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
 -- informacion de fidelizacion y los datos de su vehiculo.
 
