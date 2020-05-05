@@ -268,7 +268,32 @@ que recorre los datos necesarios de las piezas utilizadas y
 el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
 */
 
-ALTER TABLE factura ADD (iva_calculado NUMBER,iva_total NUMBER);			
+ALTER TABLE factura ADD (iva_calculado NUMBER,total NUMBER);			
+-- Creamos una vista para facilitar la inserción.
+CREATE OR REPLACE VIEW v_calcula_fact(pieza,preciounidadventa,codref,idfactura,iva,iva_calc,tot)
+AS SELECT   P.nombre,P.preciounidadventa,
+            P.codref,F.idfactura,F.iva,
+            P.preciounidadventa*(1+(F.iva/100))-P.preciounidadventa,
+            P.preciounidadventa*(1+(F.iva/100))
+FROM pieza P 
+INNER JOIN contiene C ON C.pieza_codref=P.codref
+INNER JOIN factura F ON C.factura_idfactura=F.idfactura;
+
+SELECT * FROM v_calcula_fact;
+
+-- NO FUNCIONA --
+CREATE OR REPLACE PROCEDURE autoracle.p_calcula_fact AS
+    CURSOR c_vista IS SELECT idfactura,iva_calc,tot FROM v_calcula_fact;
+BEGIN 
+    FOR V IN c_vista LOOP
+        UPDATE factura 
+        SET iva_calculado=V.iva_calc,
+            total=V.tot
+        WHERE V.idfactura=factura.idfactura;              
+    END LOOP;
+END p_calcula_fact;
+/
+EXEC autoracle.p_calcula_fact;			
 			
 			
 /* [4]
