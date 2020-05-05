@@ -328,6 +328,13 @@ Crear un paquete en PL/SQL de analisis de datos que contenga:
         empleados involucrados los recompensa con un +/- 5% en su sueldo base respectivamente.
 */
 
+-- Por la definicion de la BD, hay una columna con un acento en la tabla LOTE. La renombramos
+ALTER TABLE LOTE
+    RENAME COLUMN "N�MERO_DE_PIEZAS" TO "NUMERO_DE_PIEZAS";
+
+DESC LOTE;
+DESC COMPRA;
+
 -- Primero, agrupamos las funciones y procedimientos en un paquete
 -- http://www.rebellionrider.com/how-to-create-pl-sql-packages-in-oracle-database/
 CREATE OR REPLACE PACKAGE PKG_AUTORACLE_ANALISIS AS
@@ -337,41 +344,116 @@ CREATE OR REPLACE PACKAGE PKG_AUTORACLE_ANALISIS AS
 END;
 
 -- Creamos todos los tipos propios que nos hagan falta
+-- DISCLAIMER: Faltaría pasar MEDIA_MIN_MAX_UNITS como "Record" en vez de como "Object"
 CREATE OR REPLACE TYPE MEDIA_MIN_MAX_UNITS AS OBJECT (
     media NUMBER,
     minimo NUMBER,
     maximo NUMBER);
 
+-- DISCLAIMER: Faltaría pasar TIEMPOS_SERVICIO como "Record" en vez de como "Object"
+CREATE OR REPLACE TYPE TIEMPOS_SERVICIO AS OBJECT (
+    dias NUMBER,
+    horas NUMBER);
+
 -- Creamos las funciones y procedimientos del paquete (RECOMIENDO probar a definirlas fuera del paquete para ver si
 -- compilan, y despues borrarlas)
 CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_AUTORACLE_ANALISIS IS
     -- 1.
-    CREATE OR REPLACE FUNCTION F_CALCULAR_PIEZAS(codref IN VARCHAR2, year in VARCHAR2) RETURN MEDIA_MIN_MAX_UNITS AS
+    CREATE OR REPLACE FUNCTION F_CALCULAR_PIEZAS(input_codref IN VARCHAR2, input_anno in VARCHAR2)
+    RETURN MEDIA_MIN_MAX_UNITS AS
         resultado MEDIA_MIN_MAX_UNITS;
+        media NUMBER := 0;
+        minimo NUMBER := 10e10;
+        maximo NUMBER := 0;
+        kounter NUMBER := 0;
+        CURSOR tabla IS
+            SELECT TO_CHAR(c.FECEMISION, 'YYYY') AS "ANNO", 
+                   l.PIEZA_CODREF AS "PIEZA_CODREF",
+                   l.NUMERO_DE_PIEZAS AS "NUMERO_DE_PIEZAS"
+            FROM AUTORACLE.COMPRA c
+            JOIN AUTORACLE.LOTE l ON c.IDCOMPRA = l.COMPRA_IDCOMPRA;
     BEGIN
-        -- PENDIENTE
+        FOR fila IN tabla LOOP
+            IF fila.ANNO = input_anno AND fila.PIEZA_CODREF = input_codref THEN -- este IF puede ir nel cursor nel WHERE
+                kounter := kounter + 1;
+                media := media + fila.NUMERO_DE_PIEZAS;
+                IF fila.NUMERO_DE_PIEZAS > maximo THEN
+                    maximo := fila.NUMERO_DE_PIEZAS;
+                END IF;
+                IF fila.NUMERO_DE_PIEZAS < minimo THEN
+                    minimo := fila.NUMERO_DE_PIEZAS;
+                END IF;
+            END IF;
+        END LOOP;
+
+        resultado.media :=  media / kounter;
+        resultado.minimo := minimo;
+        resultado.maximo := maximo;
+        RETURN resultado;
     END;
 
     -- 2. Es una funcion, pero entiendo que si se usa para TODOS los servicios, entonces es mejor un Procedimiento.
     -- Lo aclararia en el foro.
-    CREATE OR REPLACE FUNCTION F_CALCULAR_TIEMPOS
-        RETURNS TABLE(mediaDias NUMBER, mediaHoras NUMBER)
+    -- ESTE EJERCICIO NO LO TENGO CLARO (comprobad el CURSOR, creo que esta mal).
+    -- Hay que obtener la media de dias para UN SERVICIO o para todos los servicio de un tipo?????
+    -- Media de dias sobre un servicio no tiene sentido, pues UN SERVICIO (IDSERVICIO) SOLO SE HACE UNA VEZ
+    CREATE OR REPLACE FUNCTION F_CALCULAR_TIEMPOS(id_servicio IN NUMBER)
+    RETURNS TIEMPOS_SERVICIO AS -- deberia de devolver un "RECORD"
+        resultado TIEMPOS_SERVICIO;
+        CURSOR datos IS
+            SELECT SUM((s.FECREALIZACION - s.FECRECEPCION)) / COUNT(s.IDSERVICIO) AS MEDIADIAS,
+                   SUM(r.HORAS) / COUNT(s.IDSERVICIO) AS MEDIAHORAS,
+                   s.IDSERVICIO AS IDSERVICIO
+            FROM AUTORACLE.servicio s
+            JOIN AUTORACLE.reparacion r ON s.IDSERVICIO = r.IDSERVICIO;
     BEGIN
-        RETURN QUERY
-            SELECT SUM((s.FECREALIZACION - s.FECRECEPCION)) / COUNT(s.IDSERVICIO) AS MediaDias,
-                   SUM(r.HORAS) / COUNT(s.IDSERVICIO) AS MediaHoras
-            FROM servicio s
-            JOIN reparacion r ON s.IDSERVICIO = r.IDSERVICIO;
+        FOR fila IN DATOS LOOP
+            IF fila.IDSERVICIO = id_servicio THEN
+                resultado.dias = fila.MEDIADIAS;
+                resultado.horas = fila.MEDIAHORAS;
+            END IF;
+        END LOOP;
+        RETURN resultado;
     END;
 
-    -- 3. VALE! Creo que este procedimiento usa las dos funciones de arriba para cada servicio. Entonces las funciones
-    -- van para cada servicio (no se explica bien en el enunciado).
+    -- 3. VALE! Creo que este procedimiento usa las funcion del (2) para cada servicio.
     CREATE OR REPLACE PROCEDURE P_RECOMPENSA AS
-        dummy_var NUMBER;
+        servicio_mas_lento_horas NUMBER := 0; -- asi, el mas lento es el que menos dias tarda (por defecto)
+        servicio_mas_rapido_horas NUMBER := 10e10; -- asi, el mas rapido es el que mas dias tarda (por defecto)
+        servicio_mas_lento NUMBER;
+        servicio_mas_lento_idempleado NUMBER;
+        servicio_mas_rapido NUMBER;
+        servicio_mas_rapido_idempleado NUMBER;
+        CURSOR servicios IS
+            SELECT F_CALCULAR_TIEMPOS(s.IDSERVICIO).dias as MEDIA_DIAS,
+                   s.IDSERVICIO as IDSERVICIO,
+                   t.EMPLEADO_IDEMPLEADO as IDEMPLEADO
+            FROM AUTORACLE.SERVICIO s
+            JOIN AUTORACLE.TRABAJA t ON s.IDSERVICIO = t.SERVICIO_IDSERVICIO;
     BEGIN
-        FOR numero IN (SELECT 1 FROM DUAL) LOOP
-            DBMS_OUTPUT.PUT_LINE('Do nothing');
+        -- seguro que hay una forma mas sencilla de sacar el minimo y el maximo
+        FOR servicio IN servicios LOOP
+            IF servicio.MEDIA_DIAS < servicio_mas_rapido_horas THEN
+                servicio_mas_rapido = servicio.IDSERVICIO;
+                servicio_mas_rapido_horas = servicio.MEDIA_DIAS;
+                servicio_mas_rapido_idempleado = servicio.IDEMPLEADO;
+            END IF;
+
+            IF servicio.MEDIA_DIAS > servicio_mas_lento_horas THEN
+                servicio_mas_lento = servicio.IDSERVICIO;
+                servicio_mas_lento_horas = servicio.MEDIA_DIAS;
+                servicio_mas_lento_idempleado = servicio.IDEMPLEADO;
+            END IF;
         END LOOP;
+
+        -- ya tenemos el servicio mas lento y el mas rapido
+        UPDATE AUTORACLE.EMPLEADO
+            SET SUELDOBASE = SUELDOBASE - (0.05 * SUELDOBASE)
+            WHERE IDEMPLEADO = servicio_mas_lento_idempleado;
+
+        UPDATE AUTORACLE.EMPLEADO
+            SET SUELDOBASE = SUELDOBASE + (0.05 * SUELDOBASE)
+            WHERE IDEMPLEADO = servicio_mas_rapido_idempleado;
     END;
 END;
 
