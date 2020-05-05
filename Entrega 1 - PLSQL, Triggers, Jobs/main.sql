@@ -262,34 +262,60 @@ END P_REVISA;
 /
 
 /* [3]
-Añadir dos campos a la tabla factura: iva calculado y total.
-Implementar un procedimiento P_CALCULA_FACT
-que recorre los datos necesarios de las piezas utilizadas y 
-el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
+Añadir dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre
+los datos necesarios de las piezas utilizadas y el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
 */
 
-ALTER TABLE factura ADD (iva_calculado NUMBER,iva_total NUMBER);			
+ALTER TABLE factura ADD (iva_calculado NUMBER, iva_total NUMBER);			
 			
-			
-/* [4]
+CREATE OR REPLACE P_CALCULA_FACT AS
+    dummy NUMBER;
+BEGIN
+
+END;
+/
+
+/* [4] ----------- HECHO -----------
 Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO, TRIMESTRE, IVA_TOTAL siendo trimestre
 un numero de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
 Dar permiso de seleccion a los Administrativos.
 */
 
--- ||||| ESTA MAL! |||||
+-- Suponiendo que existe una vista V_COSTE_PIEZAS_TOTAL que proporcione, para cada factura, el coste total de piezas y
+-- [el coste total de horas trabajadas], y la fecha de emision de la factura
+-- Dada la arquitectura de la BD proporcionada, no hay manera de agregar las horas trabajadas por empleado.
+
+CREATE OR REPLACE VIEW AUTORACLE.V_COSTE_PIEZAS_TOTAL AS
+    SELECT f.IDFACTURA,
+           f.FECEMISION,
+           f.IVA,
+           SUM(p.PRECIOUNIDADVENTA) AS TOTAL_PIEZAS
+    FROM AUTORACLE.factura f
+    JOIN AUTORACLE.contiene c ON f.IDFACTURA = c.FACTURA_IDFACTURA
+    JOIN AUTORACLE.pieza p ON p.CODREF = c.PIEZA_CODREF
+    GROUP BY f.IDFACTURA, f.FECEMISION, f.IVA;
+
+SELECT * FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
+
+-- Sorry soy un paquete con los "groups by"
+-- https://www.oracletutorial.com/oracle-basics/oracle-group-by/
+
+CREATE OR REPLACE VIEW AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE AS
+    SELECT TO_CHAR(FECEMISION, 'YYYY') as "año",
+           TO_CHAR(FECEMISION, 'Q') as "cuatrimestre",
+           (IVA / 100) * TOTAL_PIEZAS as "iva_total"
+    FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
+    
+SELECT * FROM AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE;
 
 CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
-    SELECT UNIQUE(TO_CHAR(FECEMISION, 'YYYY')) AS "año",
-           TO_CHAR(FECEMISION, 'Q') AS "trimestre",
-           SUM(IVA) AS "iva_total"
-    FROM AUTORACLE.FACTURA
-    GROUP BY FECEMISION;
-
+    SELECT "año", "cuatrimestre", SUM("iva_total") as "iva_total"
+    FROM V_INTERMEDIA_IVA_TRIMESTRE
+    GROUP BY "año", "cuatrimestre";
+    
 SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE;
-SELECT * FROM AUTORACLE.FACTURA;
 
-
+GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE TO R_ADMINISTRATIVO;
 
 /* [5]
 Crear un paquete en PL/SQL de analisis de datos que contenga:
@@ -352,7 +378,7 @@ END;
 
 
 /* [6]
-Añadir al modelo una tabla FIDELIZACIoN que permite almacenar un descuento por cliente y año.
+Añadir al modelo una tabla FIDELIZACION que permite almacenar un descuento por cliente y año.
 Crear un paquete en PL/SQL de gestion de descuentos.
     El procedimiento P_Calcular_Descuento, tomara un cliente y un año y calculara el descuento del que podra
     disfrutar el año siguiente. Para ello, hasta un maximo del 10%, ira incrementando el descuento en un 1%,
