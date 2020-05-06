@@ -2,6 +2,7 @@
 -- Antonio J. Galan, Manuel Gonzalez, Pablo Rodriguez, Joaquin Terrasa
 
 -- { Por defecto, usamos el usuario "AUTORACLE" creado previamente en la BD }
+SET SERVEROUTPUT ON; -- para comprobar las funciones/procedimientos/triggers etc
 
 /* [1] (desde SYSDBA)
 Modificar el modelo (si es necesario) para almacenar el usuario de Oracle que cada empleado o cliente pueda
@@ -471,20 +472,49 @@ Crear un paquete en PL/SQL de gestion de descuentos.
         3.  Por cada servicio proporcionado en el que tuvo que esperar mas de la media de todos los servicios.
 */
 
-CREATE TABLE autoracle.fidelizacion(
-    "CLIENTE" VARCHAR2(16),
-    "DESCUENTO" NUMBER,
-    "ANNO" DATE
+CREATE TABLE AUTORACLE.FIDELIZACION(
+    "CLIENTE_IDCLIENTE" VARCHAR2(16),
+    "DESCUENTO" NUMBER(3), -- de 0 a 100
+    "ANNO" VARCHAR2(4) -- de 0 a 9999
 );
 
-CREATE OR REPLACE PACKAGE autoracle.pck_gestion_descuentos AS
+-- Para asegurarnos de que hay UN descuento POR cliente y año, creamos un trigger
+CREATE OR REPLACE TRIGGER AUTORACLE.TR_ASEGURAR_FIDELIZACION
+    BEFORE INSERT OR UPDATE ON AUTORACLE.FIDELIZACION FOR EACH ROW
+DECLARE
+    descuento_ya_existe EXCEPTION;
+    CURSOR tabla IS
+        SELECT anno
+        FROM AUTORACLE.FIDELIZACION
+        WHERE cliente_idcliente = :new.CLIENTE_IDCLIENTE;
+BEGIN
+    FOR fila IN tabla LOOP
+        IF fila.ANNO = :new.ANNO THEN -- si el cliente y el anno coinciden: ERROR
+            RAISE descuento_ya_existe;
+        END IF;
+    END LOOP;
+EXCEPTION
+    WHEN descuento_ya_existe THEN
+        RAISE_APPLICATION_ERROR(-20015, 'Ya existe un descuento para '||:new.CLIENTE_IDCLIENTE||' en el año '||:new.ANNO);
+END;
+
+INSERT ALL -- agregamos datos a la tabla
+    INTO AUTORACLE.FIDELIZACION VALUES ('789', 10, '2020')
+    INTO AUTORACLE.FIDELIZACION VALUES ('789', 20, '2019')
+    INTO AUTORACLE.FIDELIZACION VALUES ('16', 35, '2008')
+    INTO AUTORACLE.FIDELIZACION VALUES ('420', 5, '2020')
+SELECT 1 FROM DUAL;
+COMMIT;
+
+-- Ahora, creamos el paquete :)
+CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_DESCUENTOS AS
     PROCEDURE p_calcular_descuento(cliente VARCHAR2,anno DATE);
     PROCEDURE p_aplicar_descuento(cliente VARCHAR2,anno DATE);
 END pck_gestion_descuentos;
 /
 
-CREATE OR REPLACE PACKAGE BODY autoracle.pck_gestion_descuentos AS
-    PROCEDURE p_calcular_descuento(cliente VARCHAR2,anno DATE) AS
+CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_DESCUENTOS AS
+    PROCEDURE P_CALCULAR_DESCUENTO(cliente VARCHAR2, anno DATE) AS
     BEGIN
         IF
         THEN
@@ -520,11 +550,23 @@ CREATE OR REPLACE PACKAGE BODY autoracle.pck_gestion_descuentos AS
             UPDATE fidelizacion F SET F.descuento=10 WHERE F.cliente=cliente;
         END IF;
     END p_calcular_descuento;
-    PROCEDURE p_aplicar_descuento(cliente VARCHAR2,anno DATE) AS
-    BEGIN
 
-    END p_aplicar_descuento;
-END pck_gestion_descuentos;
+    PROCEDURE P_APLICAR_DESCUENTO(cliente VARCHAR2, anno VARCHAR2) AS -- anno es un string "2000", "1965", etc
+        v_descuento NUMBER := 0; -- por defecto el descuento es 0
+    BEGIN
+        SELECT descuento INTO v_descuento
+        FROM AUTORACLE.FIDELIZACION
+        WHERE CLIENTE_IDCLIENTE = cliente AND ANNO = anno;
+
+        UPDATE AUTORACLE.FACTURA
+            SET DESCUENTO = v_descuento
+            WHERE CLIENTE_IDCLIENTE = cliente AND TO_CHAR(FECEMISION, 'YYYY') = anno;
+    EXCEPTION
+        WHEN no_data_found THEN -- si el "SELECT .. INTO .." no obtiene nada
+            RAISE_APPLICATION_ERROR(-20016, 'P_APLICAR_DESCUENTO Error: No hay descuento para '||cliente||', '||anno);
+    END;
+
+END;
 /
 
 
