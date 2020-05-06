@@ -1,242 +1,267 @@
+-- Reinicio del espacio de tablas del trabajo
+DROP TABLESPACE ts_autoracle
+    INCLUDING CONTENTS;
+
+CREATE TABLESPACE ts_autoracle
+    DATAFILE 'C:\USERS\APP\ALUMNOS\ORADATA\ORCL\autoracle.dbf'
+    SIZE 16M
+    AUTOEXTEND ON NEXT 200K
+    MAXSIZE 128M;
+
+
+-- Reinicio del usuario 'autoracle'
+DROP USER autoracle
+    CASCADE;
+
+CREATE USER autoracle
+    IDENTIFIED BY autoracle
+    DEFAULT TABLESPACE ts_autoracle
+    QUOTA UNLIMITED ON ts_autoracle;
+
+GRANT CONNECT, CREATE TABLE, CREATE VIEW, CREATE MATERIALIZED VIEW
+    TO AUTORACLE;
+
+
+-- Tablas y datos para el trabajo
 --------------------------------------------------------
--- Archivo creado  - miércoles-abril-01-2020   
+-- Archivo creado  - miércoles-abril-01-2020
 --------------------------------------------------------
 --------------------------------------------------------
 --  DDL for Table CATEGORIA
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."CATEGORIA" 
-   (	"IDCATEGORIA" NUMBER(*,0), 
+  CREATE TABLE "AUTORACLE"."CATEGORIA"
+   (	"IDCATEGORIA" NUMBER(*,0),
 	"NOMBRE" VARCHAR2(128 BYTE)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table CITA
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."CITA" 
-   (	"IDCITA" NUMBER(*,0), 
-	"FECHA_SOLICITUD" DATE, 
-	"FECHA_CONCERTADA" DATE, 
+  CREATE TABLE "AUTORACLE"."CITA"
+   (	"IDCITA" NUMBER(*,0),
+	"FECHA_SOLICITUD" DATE,
+	"FECHA_CONCERTADA" DATE,
 	"CLIENTE_IDCLIENTE" VARCHAR2(16 BYTE)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table CLIENTE
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."CLIENTE" 
-   (	"IDCLIENTE" VARCHAR2(16 BYTE), 
-	"TELEFONO" NUMBER(*,0), 
-	"NOMBRE" VARCHAR2(64 BYTE), 
-	"APELLIDO1" VARCHAR2(64 BYTE), 
-	"APELLIDO2" VARCHAR2(64 BYTE), 
+  CREATE TABLE "AUTORACLE"."CLIENTE"
+   (	"IDCLIENTE" VARCHAR2(16 BYTE),
+	"TELEFONO" NUMBER(*,0),
+	"NOMBRE" VARCHAR2(64 BYTE),
+	"APELLIDO1" VARCHAR2(64 BYTE),
+	"APELLIDO2" VARCHAR2(64 BYTE),
 	"EMAIL" VARCHAR2(64 BYTE)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table COMPATIBLE
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."COMPATIBLE" 
-   (	"PIEZA_CODREF" VARCHAR2(16 BYTE), 
-	"MODELO_IDMODELO" NUMBER(*,0), 
+  CREATE TABLE "AUTORACLE"."COMPATIBLE"
+   (	"PIEZA_CODREF" VARCHAR2(16 BYTE),
+	"MODELO_IDMODELO" NUMBER(*,0),
 	"MODELO_IDMARCA" NUMBER(*,0)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table COMPRA
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."COMPRA" 
-   (	"IDCOMPRA" NUMBER(*,0), 
-	"FECEMISION" DATE, 
-	"PROVEEDOR_NIF" VARCHAR2(16 BYTE), 
+  CREATE TABLE "AUTORACLE"."COMPRA"
+   (	"IDCOMPRA" NUMBER(*,0),
+	"FECEMISION" DATE,
+	"PROVEEDOR_NIF" VARCHAR2(16 BYTE),
 	"FECRECEPCION" DATE
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table CONTIENE
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."CONTIENE" 
-   (	"FACTURA_IDFACTURA" NUMBER(*,0), 
+  CREATE TABLE "AUTORACLE"."CONTIENE"
+   (	"FACTURA_IDFACTURA" NUMBER(*,0),
 	"PIEZA_CODREF" VARCHAR2(16 BYTE)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table EMPLEADO
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."EMPLEADO" 
-   (	"IDEMPLEADO" VARCHAR2(16 BYTE), 
-	"NOMBRE" VARCHAR2(64 BYTE), 
-	"APELLIDO1" VARCHAR2(64 BYTE), 
-	"APELLIDO2" VARCHAR2(64 BYTE), 
-	"FECENTRADA" DATE, 
-	"DESPEDIDO" NUMBER, 
-	"SUELDOBASE" NUMBER(8,2), 
-	"HORAS" NUMBER(*,0), 
-	"PUESTO" VARCHAR2(64 BYTE), 
+  CREATE TABLE "AUTORACLE"."EMPLEADO"
+   (	"IDEMPLEADO" VARCHAR2(16 BYTE),
+	"NOMBRE" VARCHAR2(64 BYTE),
+	"APELLIDO1" VARCHAR2(64 BYTE),
+	"APELLIDO2" VARCHAR2(64 BYTE),
+	"FECENTRADA" DATE,
+	"DESPEDIDO" NUMBER,
+	"SUELDOBASE" NUMBER(8,2),
+	"HORAS" NUMBER(*,0),
+	"PUESTO" VARCHAR2(64 BYTE),
 	"RETENCIONES" NUMBER(*,0)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table EXAMEN
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."EXAMEN" 
-   (	"ESTADO" VARCHAR2(1024 BYTE), 
-	"CATEGORIA_IDCATEGORIA" NUMBER(*,0), 
+  CREATE TABLE "AUTORACLE"."EXAMEN"
+   (	"ESTADO" VARCHAR2(1024 BYTE),
+	"CATEGORIA_IDCATEGORIA" NUMBER(*,0),
 	"MANTENIMIENTO_IDSERVICIO" NUMBER(*,0)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table FACTURA
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."FACTURA" 
-   (	"IDFACTURA" NUMBER(*,0), 
-	"CLIENTE_IDCLIENTE" VARCHAR2(16 BYTE), 
-	"IVA" NUMBER(*,0) DEFAULT 21, 
-	"FECEMISION" DATE, 
-	"DESCUENTO" NUMBER(*,0) DEFAULT 0, 
+  CREATE TABLE "AUTORACLE"."FACTURA"
+   (	"IDFACTURA" NUMBER(*,0),
+	"CLIENTE_IDCLIENTE" VARCHAR2(16 BYTE),
+	"IVA" NUMBER(*,0) DEFAULT 21,
+	"FECEMISION" DATE,
+	"DESCUENTO" NUMBER(*,0) DEFAULT 0,
 	"EMPLEADO_IDEMPLEADO" VARCHAR2(16 BYTE)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table LOTE
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."LOTE" 
-   (	"N�MERO_DE_PIEZAS" NUMBER(*,0), 
-	"PIEZA_CODREF" VARCHAR2(16 BYTE), 
-	"COMPRA_IDCOMPRA" NUMBER(*,0), 
+  CREATE TABLE "AUTORACLE"."LOTE"
+   (	"N�MERO_DE_PIEZAS" NUMBER(*,0),
+	"PIEZA_CODREF" VARCHAR2(16 BYTE),
+	"COMPRA_IDCOMPRA" NUMBER(*,0),
 	"IVA" NUMBER(*,0)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table MANTENIMIENTO
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."MANTENIMIENTO" 
-   (	"IDSERVICIO" NUMBER(*,0), 
+  CREATE TABLE "AUTORACLE"."MANTENIMIENTO"
+   (	"IDSERVICIO" NUMBER(*,0),
 	"FECPROXREVISION" DATE
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table MARCA
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."MARCA" 
-   (	"IDMARCA" NUMBER(*,0), 
-	"NOMBRE" VARCHAR2(128 BYTE), 
+  CREATE TABLE "AUTORACLE"."MARCA"
+   (	"IDMARCA" NUMBER(*,0),
+	"NOMBRE" VARCHAR2(128 BYTE),
 	"PRECIOHORA" NUMBER(6,2)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table MODELO
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."MODELO" 
-   (	"IDMODELO" NUMBER(*,0), 
-	"MARCA_IDMARCA" NUMBER(*,0), 
-	"NOMBRE" VARCHAR2(128 BYTE), 
-	"NUMPUERTAS" NUMBER, 
-	"COMBUSTIBLE" VARCHAR2(64 BYTE), 
+  CREATE TABLE "AUTORACLE"."MODELO"
+   (	"IDMODELO" NUMBER(*,0),
+	"MARCA_IDMARCA" NUMBER(*,0),
+	"NOMBRE" VARCHAR2(128 BYTE),
+	"NUMPUERTAS" NUMBER,
+	"COMBUSTIBLE" VARCHAR2(64 BYTE),
 	"CAPACMALETERO" NUMBER(*,0)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table NECESITA
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."NECESITA" 
-   (	"PIEZA" VARCHAR2(16 BYTE), 
+  CREATE TABLE "AUTORACLE"."NECESITA"
+   (	"PIEZA" VARCHAR2(16 BYTE),
 	"REPARACION" NUMBER
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table PIEZA
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."PIEZA" 
-   (	"CODREF" VARCHAR2(16 BYTE), 
-	"NOMBRE" VARCHAR2(128 BYTE), 
-	"PRECIOUNIDADVENTA" NUMBER(8,2), 
-	"PRECIOUNIDADCOMPRA" NUMBER(8,2), 
-	"CANTIDAD" NUMBER(*,0), 
-	"FECCADUCIDAD" DATE, 
+  CREATE TABLE "AUTORACLE"."PIEZA"
+   (	"CODREF" VARCHAR2(16 BYTE),
+	"NOMBRE" VARCHAR2(128 BYTE),
+	"PRECIOUNIDADVENTA" NUMBER(8,2),
+	"PRECIOUNIDADCOMPRA" NUMBER(8,2),
+	"CANTIDAD" NUMBER(*,0),
+	"FECCADUCIDAD" DATE,
 	"PROVEEDOR_NIF" VARCHAR2(16 BYTE)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table PROVEE
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."PROVEE" 
-   (	"PROVEEDOR_NIF" VARCHAR2(16 BYTE), 
+  CREATE TABLE "AUTORACLE"."PROVEE"
+   (	"PROVEEDOR_NIF" VARCHAR2(16 BYTE),
 	"PIEZA_CODREF" VARCHAR2(16 BYTE)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table PROVEEDOR
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."PROVEEDOR" 
-   (	"NIF" VARCHAR2(16 BYTE), 
-	"TELEFONO" NUMBER(*,0), 
-	"NOMBRE" VARCHAR2(64 BYTE), 
-	"EMAIL" VARCHAR2(64 BYTE), 
-	"DIRECCION" VARCHAR2(256 BYTE), 
-	"CODPOSTAL" NUMBER(*,0), 
+  CREATE TABLE "AUTORACLE"."PROVEEDOR"
+   (	"NIF" VARCHAR2(16 BYTE),
+	"TELEFONO" NUMBER(*,0),
+	"NOMBRE" VARCHAR2(64 BYTE),
+	"EMAIL" VARCHAR2(64 BYTE),
+	"DIRECCION" VARCHAR2(256 BYTE),
+	"CODPOSTAL" NUMBER(*,0),
 	"WEB" VARCHAR2(128 BYTE)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table REPARACION
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."REPARACION" 
-   (	"IDSERVICIO" NUMBER(*,0), 
-	"MOTIVO" VARCHAR2(1024 BYTE), 
+  CREATE TABLE "AUTORACLE"."REPARACION"
+   (	"IDSERVICIO" NUMBER(*,0),
+	"MOTIVO" VARCHAR2(1024 BYTE),
 	"HORAS" NUMBER(6,2)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table REQUIERE
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."REQUIERE" 
-   (	"PIEZA_CODREF" VARCHAR2(16 BYTE), 
+  CREATE TABLE "AUTORACLE"."REQUIERE"
+   (	"PIEZA_CODREF" VARCHAR2(16 BYTE),
 	"EXAMEN_CATEGORIA_IDCATEGORIA" NUMBER(*,0)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table SERVICIO
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."SERVICIO" 
-   (	"IDSERVICIO" NUMBER(*,0), 
-	"ESTADO" VARCHAR2(64 BYTE), 
-	"FECAPERTURA" DATE, 
-	"FECRECEPCION" DATE, 
-	"FECREALIZACION" DATE, 
-	"OBSCHAPA" VARCHAR2(1024 BYTE), 
-	"VEHICULO_NUMBASTIDOR" VARCHAR2(64 BYTE), 
+  CREATE TABLE "AUTORACLE"."SERVICIO"
+   (	"IDSERVICIO" NUMBER(*,0),
+	"ESTADO" VARCHAR2(64 BYTE),
+	"FECAPERTURA" DATE,
+	"FECRECEPCION" DATE,
+	"FECREALIZACION" DATE,
+	"OBSCHAPA" VARCHAR2(1024 BYTE),
+	"VEHICULO_NUMBASTIDOR" VARCHAR2(64 BYTE),
 	"EFECTIVIDAD" NUMBER(*,0)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table TRABAJA
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."TRABAJA" 
-   (	"EMPLEADO_IDEMPLEADO" VARCHAR2(16 BYTE), 
+  CREATE TABLE "AUTORACLE"."TRABAJA"
+   (	"EMPLEADO_IDEMPLEADO" VARCHAR2(16 BYTE),
 	"SERVICIO_IDSERVICIO" NUMBER(*,0)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table VACACIONES
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."VACACIONES" 
-   (	"IDENTIFICADOR" NUMBER(*,0), 
-	"FECENTRADA" DATE, 
-	"FECSALIDA" DATE, 
-	"CONCEDIDO" NUMBER, 
+  CREATE TABLE "AUTORACLE"."VACACIONES"
+   (	"IDENTIFICADOR" NUMBER(*,0),
+	"FECENTRADA" DATE,
+	"FECSALIDA" DATE,
+	"CONCEDIDO" NUMBER,
 	"EMPLEADO_IDEMPLEADO" VARCHAR2(16 BYTE)
    )   NO INMEMORY ;
 --------------------------------------------------------
 --  DDL for Table VEHICULO
 --------------------------------------------------------
 
-  CREATE TABLE "AUTORACLE"."VEHICULO" 
-   (	"NUMBASTIDOR" VARCHAR2(64 BYTE), 
-	"MATRICULA" VARCHAR2(16 BYTE), 
-	"FABRICACION" NUMBER(*,0), 
-	"MODELO_IDMODELO" NUMBER(*,0), 
-	"MODELO_MARCA_IDMARCA" NUMBER(*,0), 
-	"CLIENTE_IDCLIENTE" VARCHAR2(16 BYTE), 
+  CREATE TABLE "AUTORACLE"."VEHICULO"
+   (	"NUMBASTIDOR" VARCHAR2(64 BYTE),
+	"MATRICULA" VARCHAR2(16 BYTE),
+	"FABRICACION" NUMBER(*,0),
+	"MODELO_IDMODELO" NUMBER(*,0),
+	"MODELO_MARCA_IDMARCA" NUMBER(*,0),
+	"CLIENTE_IDCLIENTE" VARCHAR2(16 BYTE),
 	"KILOMETRAJE" NUMBER(*,0)
    )   NO INMEMORY ;
 REM INSERTING into AUTORACLE.CATEGORIA
@@ -587,151 +612,151 @@ Insert into AUTORACLE.VEHICULO (NUMBASTIDOR,MATRICULA,FABRICACION,MODELO_IDMODEL
 --  DDL for Index CATEGORIA_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."CATEGORIA_PK" ON "AUTORACLE"."CATEGORIA" ("IDCATEGORIA") 
+  CREATE UNIQUE INDEX "AUTORACLE"."CATEGORIA_PK" ON "AUTORACLE"."CATEGORIA" ("IDCATEGORIA")
   ;
 --------------------------------------------------------
 --  DDL for Index CITA_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."CITA_PK" ON "AUTORACLE"."CITA" ("CLIENTE_IDCLIENTE", "IDCITA") 
+  CREATE UNIQUE INDEX "AUTORACLE"."CITA_PK" ON "AUTORACLE"."CITA" ("CLIENTE_IDCLIENTE", "IDCITA")
   ;
 --------------------------------------------------------
 --  DDL for Index CLIENTE_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."CLIENTE_PK" ON "AUTORACLE"."CLIENTE" ("IDCLIENTE") 
+  CREATE UNIQUE INDEX "AUTORACLE"."CLIENTE_PK" ON "AUTORACLE"."CLIENTE" ("IDCLIENTE")
   ;
 --------------------------------------------------------
 --  DDL for Index COMPATIBLE_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."COMPATIBLE_PK" ON "AUTORACLE"."COMPATIBLE" ("PIEZA_CODREF", "MODELO_IDMODELO", "MODELO_IDMARCA") 
+  CREATE UNIQUE INDEX "AUTORACLE"."COMPATIBLE_PK" ON "AUTORACLE"."COMPATIBLE" ("PIEZA_CODREF", "MODELO_IDMODELO", "MODELO_IDMARCA")
   ;
 --------------------------------------------------------
 --  DDL for Index COMPRA_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."COMPRA_PK" ON "AUTORACLE"."COMPRA" ("IDCOMPRA") 
+  CREATE UNIQUE INDEX "AUTORACLE"."COMPRA_PK" ON "AUTORACLE"."COMPRA" ("IDCOMPRA")
   ;
 --------------------------------------------------------
 --  DDL for Index CONTIENE_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."CONTIENE_PK" ON "AUTORACLE"."CONTIENE" ("FACTURA_IDFACTURA", "PIEZA_CODREF") 
+  CREATE UNIQUE INDEX "AUTORACLE"."CONTIENE_PK" ON "AUTORACLE"."CONTIENE" ("FACTURA_IDFACTURA", "PIEZA_CODREF")
   ;
 --------------------------------------------------------
 --  DDL for Index EMPLEADO_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."EMPLEADO_PK" ON "AUTORACLE"."EMPLEADO" ("IDEMPLEADO") 
+  CREATE UNIQUE INDEX "AUTORACLE"."EMPLEADO_PK" ON "AUTORACLE"."EMPLEADO" ("IDEMPLEADO")
   ;
 --------------------------------------------------------
 --  DDL for Index EXAMEN_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."EXAMEN_PK" ON "AUTORACLE"."EXAMEN" ("CATEGORIA_IDCATEGORIA") 
+  CREATE UNIQUE INDEX "AUTORACLE"."EXAMEN_PK" ON "AUTORACLE"."EXAMEN" ("CATEGORIA_IDCATEGORIA")
   ;
 --------------------------------------------------------
 --  DDL for Index FACTURA_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."FACTURA_PK" ON "AUTORACLE"."FACTURA" ("IDFACTURA") 
+  CREATE UNIQUE INDEX "AUTORACLE"."FACTURA_PK" ON "AUTORACLE"."FACTURA" ("IDFACTURA")
   ;
 --------------------------------------------------------
 --  DDL for Index LOTE_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."LOTE_PK" ON "AUTORACLE"."LOTE" ("PIEZA_CODREF", "COMPRA_IDCOMPRA") 
+  CREATE UNIQUE INDEX "AUTORACLE"."LOTE_PK" ON "AUTORACLE"."LOTE" ("PIEZA_CODREF", "COMPRA_IDCOMPRA")
   ;
 --------------------------------------------------------
 --  DDL for Index MANTENIMIENTO_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."MANTENIMIENTO_PK" ON "AUTORACLE"."MANTENIMIENTO" ("IDSERVICIO") 
+  CREATE UNIQUE INDEX "AUTORACLE"."MANTENIMIENTO_PK" ON "AUTORACLE"."MANTENIMIENTO" ("IDSERVICIO")
   ;
 --------------------------------------------------------
 --  DDL for Index MARCA_NOMBRE_UN
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."MARCA_NOMBRE_UN" ON "AUTORACLE"."MARCA" ("NOMBRE") 
+  CREATE UNIQUE INDEX "AUTORACLE"."MARCA_NOMBRE_UN" ON "AUTORACLE"."MARCA" ("NOMBRE")
   ;
 --------------------------------------------------------
 --  DDL for Index MARCA_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."MARCA_PK" ON "AUTORACLE"."MARCA" ("IDMARCA") 
+  CREATE UNIQUE INDEX "AUTORACLE"."MARCA_PK" ON "AUTORACLE"."MARCA" ("IDMARCA")
   ;
 --------------------------------------------------------
 --  DDL for Index MODELO_NOMBRE_UN
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."MODELO_NOMBRE_UN" ON "AUTORACLE"."MODELO" ("NOMBRE") 
+  CREATE UNIQUE INDEX "AUTORACLE"."MODELO_NOMBRE_UN" ON "AUTORACLE"."MODELO" ("NOMBRE")
   ;
 --------------------------------------------------------
 --  DDL for Index MODELO_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."MODELO_PK" ON "AUTORACLE"."MODELO" ("IDMODELO", "MARCA_IDMARCA") 
+  CREATE UNIQUE INDEX "AUTORACLE"."MODELO_PK" ON "AUTORACLE"."MODELO" ("IDMODELO", "MARCA_IDMARCA")
   ;
 --------------------------------------------------------
 --  DDL for Index PIEZA_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."PIEZA_PK" ON "AUTORACLE"."PIEZA" ("CODREF") 
+  CREATE UNIQUE INDEX "AUTORACLE"."PIEZA_PK" ON "AUTORACLE"."PIEZA" ("CODREF")
   ;
 --------------------------------------------------------
 --  DDL for Index PROVEEDOR_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."PROVEEDOR_PK" ON "AUTORACLE"."PROVEEDOR" ("NIF") 
+  CREATE UNIQUE INDEX "AUTORACLE"."PROVEEDOR_PK" ON "AUTORACLE"."PROVEEDOR" ("NIF")
   ;
 --------------------------------------------------------
 --  DDL for Index PROVEE_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."PROVEE_PK" ON "AUTORACLE"."PROVEE" ("PROVEEDOR_NIF", "PIEZA_CODREF") 
+  CREATE UNIQUE INDEX "AUTORACLE"."PROVEE_PK" ON "AUTORACLE"."PROVEE" ("PROVEEDOR_NIF", "PIEZA_CODREF")
   ;
 --------------------------------------------------------
 --  DDL for Index REPARACION_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."REPARACION_PK" ON "AUTORACLE"."REPARACION" ("IDSERVICIO") 
+  CREATE UNIQUE INDEX "AUTORACLE"."REPARACION_PK" ON "AUTORACLE"."REPARACION" ("IDSERVICIO")
   ;
 --------------------------------------------------------
 --  DDL for Index REQUIERE_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."REQUIERE_PK" ON "AUTORACLE"."REQUIERE" ("PIEZA_CODREF", "EXAMEN_CATEGORIA_IDCATEGORIA") 
+  CREATE UNIQUE INDEX "AUTORACLE"."REQUIERE_PK" ON "AUTORACLE"."REQUIERE" ("PIEZA_CODREF", "EXAMEN_CATEGORIA_IDCATEGORIA")
   ;
 --------------------------------------------------------
 --  DDL for Index SERVICIO_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."SERVICIO_PK" ON "AUTORACLE"."SERVICIO" ("IDSERVICIO") 
+  CREATE UNIQUE INDEX "AUTORACLE"."SERVICIO_PK" ON "AUTORACLE"."SERVICIO" ("IDSERVICIO")
   ;
 --------------------------------------------------------
 --  DDL for Index TRABAJA_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."TRABAJA_PK" ON "AUTORACLE"."TRABAJA" ("EMPLEADO_IDEMPLEADO", "SERVICIO_IDSERVICIO") 
+  CREATE UNIQUE INDEX "AUTORACLE"."TRABAJA_PK" ON "AUTORACLE"."TRABAJA" ("EMPLEADO_IDEMPLEADO", "SERVICIO_IDSERVICIO")
   ;
 --------------------------------------------------------
 --  DDL for Index VACACIONES_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."VACACIONES_PK" ON "AUTORACLE"."VACACIONES" ("EMPLEADO_IDEMPLEADO", "IDENTIFICADOR") 
+  CREATE UNIQUE INDEX "AUTORACLE"."VACACIONES_PK" ON "AUTORACLE"."VACACIONES" ("EMPLEADO_IDEMPLEADO", "IDENTIFICADOR")
   ;
 --------------------------------------------------------
 --  DDL for Index VEHICULO_MATRICULA_UN
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."VEHICULO_MATRICULA_UN" ON "AUTORACLE"."VEHICULO" ("MATRICULA") 
+  CREATE UNIQUE INDEX "AUTORACLE"."VEHICULO_MATRICULA_UN" ON "AUTORACLE"."VEHICULO" ("MATRICULA")
   ;
 --------------------------------------------------------
 --  DDL for Index VEHICULO_PK
 --------------------------------------------------------
 
-  CREATE UNIQUE INDEX "AUTORACLE"."VEHICULO_PK" ON "AUTORACLE"."VEHICULO" ("NUMBASTIDOR") 
+  CREATE UNIQUE INDEX "AUTORACLE"."VEHICULO_PK" ON "AUTORACLE"."VEHICULO" ("NUMBASTIDOR")
   ;
 --------------------------------------------------------
 --  Constraints for Table CATEGORIA
