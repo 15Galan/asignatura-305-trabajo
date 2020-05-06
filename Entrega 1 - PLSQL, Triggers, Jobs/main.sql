@@ -3,38 +3,42 @@
 
 -- { Por defecto, usamos el usuario "AUTORACLE" creado previamente en la BD }
 
+-- SHOW SERVEROUTPUT;
+SET SERVEROUTPUT ON;
+
 /* [1] (desde SYSDBA)
-Modificar el modelo (si es necesario) para almacenar el usuario de Oracle que cada empleado o cliente pueda
-utilizar para conectarse a la base de datos. Ademas, habra de crear roles dependiendo del tipo de usuario:
+Modificar el modelo (si es necesario) para almacenar el usuario de Oracle que
+cada empleado o cliente pueda utilizar para conectarse a la base de datos.
+Ademas, habra que crear roles dependiendo del tipo de usuario:
  * Administrativo, con acceso a toda la BD;
- * Empleado, con acceso solo a aquellos objetos que precise para su trabajo (y nunca podra acceder a los datos de otros empleados);
- * Cliente, con acceso solo a los datos propios, de su vehiculo y de sus servicios.
+ * Empleado, con acceso solo a aquellos objetos que precise para su trabajo (y
+   nunca podra acceder a los datos de otros empleados);
+ * Cliente, con acceso solo a los datos propios, de su vehiculo y de sus
+   servicios.
 Los roles se llamaran R_ADMINISTRATIVO, R_MECANICO, R_CLIENTE.
 */
 
--- Antes de comenzar, asignaremos USUARIO1 y USUARIO2 (de las practicas anteriores) a las tablas EMPLEADO y CLIENTE
--- respectivamente, para poder probar los cambios que vamos a realizar en la BD.
-SELECT username, user_id FROM ALL_USERS;
--- en mi caso, ID(USUARIO1) = 104 e ID(USUARIO2) = 105
 
-UPDATE AUTORACLE.CLIENTE
-    SET IDCLIENTE = 104 WHERE IDCLIENTE = 111;
-
-UPDATE AUTORACLE.EMPLEADO
-    SET IDEMPLEADO = 105 WHERE IDEMPLEADO = 300;
+-- ROLES Y PERMISOS
+/*
+DROP ROLE r_administrativo;
+DROP ROLE r_mecanico;
+DROP ROLE r_cliente;
+*/
 
 CREATE ROLE r_administrativo;
 CREATE ROLE r_mecanico;
 CREATE ROLE r_cliente;
 
-GRANT R_CLIENTE TO USUARIO1;
-GRANT R_MECANICO TO USUARIO2;
-GRANT R_ADMINISTRATIVO TO AUTORACLE;
 
 -- { permisos para R_ADMINISTRATIVO }
 
 GRANT dba
     TO r_administrativo;
+
+GRANT R_ADMINISTRATIVO
+    TO AUTORACLE;
+
 
 -- { permisos para R_MECANICO }
 
@@ -90,61 +94,6 @@ GRANT SELECT
     ON autoracle.vacaciones
     TO r_mecanico;
 
--- agregamos una politica VPD (ver practica 3 / tema 2) para limitar el acceso a los datos de cada empleado
--- agregamos restricciones a las tablas "EMPLEADO", "VACACIONES", "FACTURA" y "TRABAJA".
-SELECT * FROM ALL_CONSTRAINTS WHERE CONSTRAINT_NAME LIKE '%EMPLEADO%';
--- permite precisar que tablas dependen de EMPLEADO_ID
-
--- devuelve un filtro para la clausula WHERE
--- https://www.techonthenet.com/oracle/functions/sys_context.php
-CREATE OR REPLACE FUNCTION AUTORACLE.SOLO_EMPLEADO_ACTUAL_EMPLEADO (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
-    RETURN VARCHAR2 AS
-BEGIN
-    IF (SYS_CONTEXT('userenv', 'isdba') = 'TRUE') THEN
-        RETURN '';
-    ELSE
-        RETURN 'IDEMPLEADO = ''' || SYS_CONTEXT('userenv', 'session_userid') || '''';
-    END IF;
-END;
-
-CREATE OR REPLACE FUNCTION AUTORACLE.SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
-    RETURN VARCHAR2 AS
-BEGIN
-    IF (SYS_CONTEXT('userenv', 'isdba') = 'TRUE') THEN
-        RETURN '';
-    ELSE
-        RETURN 'EMPLEADO_IDEMPLEADO = ''' || SYS_CONTEXT('userenv', 'session_userid') || '''';
-    END IF;
-END;
-
-BEGIN
-    DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE', object_name => 'EMPLEADO', policy_name => 'POL_EMPLEADO_EMPLEADO',
-        function_schema => 'AUTORACLE', policy_function => 'SOLO_EMPLEADO_ACTUAL_EMPLEADO', statement_types => 'SELECT'
-    );
-    DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE', object_name => 'VACACIONES', policy_name => 'POL_EMPLEADO_VACACIONES',
-        function_schema => 'AUTORACLE', policy_function => 'SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC', statement_types => 'SELECT'
-    );
-    DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE', object_name => 'TRABAJA', policy_name => 'POL_EMPLEADO_TRABAJA',
-        function_schema => 'AUTORACLE', policy_function => 'SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC', statement_types => 'SELECT'
-    );
-    DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE', object_name => 'FACTURA', policy_name => 'POL_EMPLEADO_FACTURA',
-        function_schema => 'AUTORACLE', policy_function => 'SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC', statement_types => 'SELECT'
-    );
-END;
-/
-
--- en el caso de que te equivoques:
-BEGIN
-    DBMS_RLS.DROP_POLICY('AUTORACLE', 'EMPLEADO', 'POL_EMPLEADO_EMPLEADO');
-    DBMS_RLS.DROP_POLICY('AUTORACLE', 'VACACIONES', 'POL_EMPLEADO_VACACIONES');
-    DBMS_RLS.DROP_POLICY('AUTORACLE', 'TRABAJA', 'POL_EMPLEADO_TRABAJA');
-    DBMS_RLS.DROP_POLICY('AUTORACLE', 'FACTURA', 'POL_EMPLEADO_FACTURA');
-END;
-/
 
 -- { permisos para R_CLIENTE }
 
@@ -168,63 +117,189 @@ GRANT SELECT
     ON autoracle.vehiculo
     TO r_mecanico, r_cliente;
 
--- agregamos una politica VPD (ver practica 3 / tema 2) para limitar el acceso a los datos de cada cliente
--- agregamos restricciones a las tablas "CLIENTE", "CITA", "FACTURA" y "VEHICULO".
-SELECT * FROM ALL_CONSTRAINTS WHERE CONSTRAINT_NAME LIKE '%CLIENTE%';
--- permite precisar que tablas dependen de EMPLEADO_ID
 
--- devuelve un filtro para la clausula WHERE
+-- RESTRICCIONES (POLITICAS)
+
+-- Politicas para R_MECANICO
+
+/*  Agregamos una politica VPD (ver practica 3 / tema 2) para limitar el acceso
+    a los datos de cada empleado agregamos restricciones a las tablas "EMPLEADO",
+    "VACACIONES", "FACTURA" y "TRABAJA".
+
+    SELECT *
+        FROM ALL_CONSTRAINTS
+            WHERE CONSTRAINT_NAME LIKE '%EMPLEADO%';
+
+    Permite precisar que tablas dependen de EMPLEADO_ID
+*/
+
+-- Devuelve un filtro para la clausula WHERE.
 -- https://www.techonthenet.com/oracle/functions/sys_context.php
-CREATE OR REPLACE FUNCTION AUTORACLE.SOLO_CLIENTE_ACTUAL_CLIENTE (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
-    RETURN VARCHAR2 AS
-BEGIN
-    IF (SYS_CONTEXT('userenv', 'isdba') = 'TRUE') THEN
-        RETURN '';
-    ELSE
-        RETURN 'IDCLIENTE = ''' || SYS_CONTEXT('userenv', 'session_userid') | '''';
-    END IF;
-END;
+CREATE OR REPLACE
+    FUNCTION AUTORACLE.SOLO_EMPLEADO_ACTUAL_EMPLEADO (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
+        RETURN VARCHAR2 AS
+        BEGIN
+            IF (SYS_CONTEXT('userenv', 'isdba') = 'TRUE') THEN
+                RETURN '';
+            ELSE
+                RETURN 'IDEMPLEADO = ''' || SYS_CONTEXT('userenv', 'session_userid') || '''';
+            END IF;
+        END;
+/
 
-CREATE OR REPLACE FUNCTION AUTORACLE.SOLO_CLIENTE_ACTUAL_CITA_VEHIC_FAC (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
-    RETURN VARCHAR2 AS
+-- Devuelve un filtro para la clausula WHERE.
+-- https://www.techonthenet.com/oracle/functions/sys_context.php
+CREATE OR REPLACE
+    FUNCTION AUTORACLE.SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
+        RETURN VARCHAR2 AS
+        BEGIN
+            IF (SYS_CONTEXT('userenv', 'isdba') = 'TRUE') THEN
+                RETURN '';
+            ELSE
+                RETURN 'EMPLEADO_IDEMPLEADO = ''' || SYS_CONTEXT('userenv', 'session_userid') || '''';
+            END IF;
+        END;
+/
+
+
+/* Eliminar las politicas de R_MECANICO
 BEGIN
-    IF (SYS_CONTEXT('userenv', 'isdba') = 'TRUE') THEN
-        RETURN '';
-    ELSE
-        RETURN 'CLIENTE_IDCLIENTE = ''' || SYS_CONTEXT('userenv', 'session_userid') || '''';
-    END IF;
+    DBMS_RLS.DROP_POLICY('AUTORACLE', 'EMPLEADO', 'POL_EMPLEADO_EMPLEADO');
+    DBMS_RLS.DROP_POLICY('AUTORACLE', 'VACACIONES', 'POL_EMPLEADO_VACACIONES');
+    DBMS_RLS.DROP_POLICY('AUTORACLE', 'TRABAJA', 'POL_EMPLEADO_TRABAJA');
+    DBMS_RLS.DROP_POLICY('AUTORACLE', 'FACTURA', 'POL_EMPLEADO_FACTURA');
 END;
+/
+*/
 
 BEGIN
     DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE', object_name => 'CLIENTE', policy_name => 'POL_CLIENTE_CLIENTE',
-        function_schema => 'AUTORACLE', policy_function => 'SOLO_CLIENTE_ACTUAL_CLIENTE',
+        object_schema => 'AUTORACLE',
+        object_name => 'EMPLEADO',
+        policy_name => 'POL_EMPLEADO_EMPLEADO',
+        function_schema => 'AUTORACLE',
+        policy_function => 'SOLO_EMPLEADO_ACTUAL_EMPLEADO',
         statement_types => 'SELECT'
     );
+
     DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE', object_name => 'CITA', policy_name => 'POL_CLIENTE_CITA',
-        function_schema => 'AUTORACLE', policy_function => 'SOLO_CLIENTE_ACTUAL_CITA_VEHIC_FAC',
+        object_schema => 'AUTORACLE',
+        object_name => 'VACACIONES',
+        policy_name => 'POL_EMPLEADO_VACACIONES',
+        function_schema => 'AUTORACLE',
+        policy_function => 'SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC',
         statement_types => 'SELECT'
     );
+
     DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE', object_name => 'VEHICULO', policy_name => 'POL_CLIENTE_VEHICULO',
-        function_schema => 'AUTORACLE', policy_function => 'SOLO_CLIENTE_ACTUAL_CITA_VEHIC_FAC',
+        object_schema => 'AUTORACLE',
+        object_name => 'TRABAJA',
+        policy_name => 'POL_EMPLEADO_TRABAJA',
+        function_schema => 'AUTORACLE',
+        policy_function => 'SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC',
         statement_types => 'SELECT'
     );
+
     DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE', object_name => 'FACTURA', policy_name => 'POL_CLIENTE_FACTURA',
-        function_schema => 'AUTORACLE', policy_function => 'SOLO_CLIENTE_ACTUAL_CITA_VEHIC_FAC',
+        object_schema => 'AUTORACLE',
+        object_name => 'FACTURA',
+        policy_name => 'POL_EMPLEADO_FACTURA',
+        function_schema => 'AUTORACLE',
+        policy_function => 'SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC',
         statement_types => 'SELECT'
     );
 END;
 /
 
--- en el caso de que te equivoques:
+
+-- Restricciones (politicas) para R_CLIENTE
+
+/*  Agregamos una politica VPD (ver practica 3 / tema 2) para limitar el acceso
+    a los datos de cada cliente agregamos restricciones a las tablas "CLIENTE",
+    "CITA", "FACTURA" y "VEHICULO".
+
+    SELECT *
+        FROM ALL_CONSTRAINTS
+            WHERE CONSTRAINT_NAME LIKE '%CLIENTE%';
+
+    Permite precisar que tablas dependen de EMPLEADO_ID.
+*/
+
+-- Devuelve un filtro para la clausula WHERE.
+-- https://www.techonthenet.com/oracle/functions/sys_context.php
+CREATE OR REPLACE
+    FUNCTION AUTORACLE.SOLO_CLIENTE_ACTUAL_CLIENTE (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
+        RETURN VARCHAR2 AS
+        BEGIN
+            IF (SYS_CONTEXT('userenv', 'isdba') = 'TRUE') THEN
+                RETURN '';
+            ELSE
+                RETURN 'IDCLIENTE = ''' || SYS_CONTEXT('userenv', 'session_userid') || '''';
+            END IF;
+        END;
+/
+
+-- Devuelve un filtro para la clausula WHERE.
+-- https://www.techonthenet.com/oracle/functions/sys_context.php
+CREATE OR REPLACE
+    FUNCTION AUTORACLE.SOLO_CLIENTE_ACTUAL_CITA_VEHIC_FAC (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
+        RETURN VARCHAR2 AS
+        BEGIN
+            IF (SYS_CONTEXT('userenv', 'isdba') = 'TRUE') THEN
+                RETURN '';
+            ELSE
+                RETURN 'CLIENTE_IDCLIENTE = ''' || SYS_CONTEXT('userenv', 'session_userid') || '''';
+            END IF;
+        END;
+/
+
+
+/* Eliminar las policias de R_CLIENTE
 BEGIN
     DBMS_RLS.DROP_POLICY('AUTORACLE', 'CLIENTE', 'POL_CLIENTE_CLIENTE');
     DBMS_RLS.DROP_POLICY('AUTORACLE', 'CITA', 'POL_CLIENTE_CITA');
     DBMS_RLS.DROP_POLICY('AUTORACLE', 'VEHICULO', 'POL_CLIENTE_VEHICULO');
     DBMS_RLS.DROP_POLICY('AUTORACLE', 'FACTURA', 'POL_CLIENTE_FACTURA');
+END;
+/
+*/
+
+BEGIN
+    DBMS_RLS.ADD_POLICY (
+        object_schema => 'AUTORACLE',
+        object_name => 'CLIENTE',
+        policy_name => 'POL_CLIENTE_CLIENTE',
+        function_schema => 'AUTORACLE',
+        policy_function => 'SOLO_CLIENTE_ACTUAL_CLIENTE',
+        statement_types => 'SELECT'
+    );
+
+    DBMS_RLS.ADD_POLICY (
+        object_schema => 'AUTORACLE',
+        object_name => 'CITA',
+        policy_name => 'POL_CLIENTE_CITA',
+        function_schema => 'AUTORACLE',
+        policy_function => 'SOLO_CLIENTE_ACTUAL_CITA_VEHIC_FAC',
+        statement_types => 'SELECT'
+    );
+
+    DBMS_RLS.ADD_POLICY (
+        object_schema => 'AUTORACLE',
+        object_name => 'VEHICULO',
+        policy_name => 'POL_CLIENTE_VEHICULO',
+        function_schema => 'AUTORACLE',
+        policy_function => 'SOLO_CLIENTE_ACTUAL_CITA_VEHIC_FAC',
+        statement_types => 'SELECT'
+    );
+
+    DBMS_RLS.ADD_POLICY (
+        object_schema => 'AUTORACLE',
+        object_name => 'FACTURA',
+        policy_name => 'POL_CLIENTE_FACTURA',
+        function_schema => 'AUTORACLE',
+        policy_function => 'SOLO_CLIENTE_ACTUAL_CITA_VEHIC_FAC',
+        statement_types => 'SELECT'
+    );
 END;
 /
 
@@ -236,34 +311,54 @@ cantidad. Necesitamos un procedimiento P_REVISA que cuando se ejecute compruebe 
 insertara en COMPRA_FUTURA aquellas piezas caducadas junto a los datos necesarios para realizar en el futuro la compra.
 */
 
-CREATE TABLE COMPRA_FUTURA (
+CREATE TABLE autoracle.COMPRA_FUTURA (
     PROVEEDOR_NIF VARCHAR2(16 BYTE),
     TELEFONO NUMBER(*, 0),
     NOMBRE VARCHAR2(64 BYTE),
 	EMAIL VARCHAR2(64 BYTE),
-    CANTIDAD NUMBER(*, 0),
-    CODREF_PIEZA NUMBER(*, 0));
+    CODREF_PIEZA NUMBER(*, 0) UNIQUE,
+    CANTIDAD NUMBER(*, 0));
 
-CREATE OR REPLACE PROCEDURE P_REVISA AS
-    CURSOR C_COMPRUEBA IS
-        SELECT CODREF, NOMBRE, CANTIDAD, FECCADUCIDAD, PROVEEDOR_NIF
-        FROM PIEZA
-        WHERE FECCADUCIDAD < SYSDATE;
-    tlfo NUMBER(38);
-    email VARCHAR2(64);
-BEGIN
-    FOR FILA IN C_COMPRUEBA LOOP
-        SELECT TELEFONO INTO tlfo FROM PROVEEDOR WHERE NIF=FILA.PROVEEDOR_NIF;
-        SELECT EMAIL INTO email FROM PROVEEDOR WHERE NIF=FILA.PROVEEDOR_NIF;
-        INSERT INTO COMPRA_FUTURA
-            VALUES (FILA.PROVEEDOR_NIF, tlfo, FILA.NOMBRE, email, FILA.CODREF, FILA.CANTIDAD);
-    END LOOP;
-END P_REVISA;
+CREATE OR REPLACE
+    PROCEDURE autoracle.p_revisa AS
+        BEGIN
+            DECLARE
+                CURSOR datos IS
+                    SELECT  Pr.nif, Pr.telefono, Pr.nombre, Pr.email,
+                            Pi.cantidad, Pi.codref, Pi.feccaducidad
+                        FROM autoracle.pieza Pi
+                            JOIN autoracle.proveedor Pr ON proveedor_nif = nif;
+
+                repetida NUMBER;
+
+            BEGIN
+                FOR fila IN datos LOOP
+                    IF fila.feccaducidad < (sysdate-1) THEN
+                        INSERT INTO autoracle.compra_futura
+                                VALUES (
+                                fila.nif,
+                                fila.telefono,
+                                fila.nombre,
+                                fila.email,
+                                fila.codref,
+                                fila.cantidad);
+
+                        COMMIT;
+                    END IF;
+
+                END LOOP;
+
+                EXCEPTION
+                    WHEN DUP_VAL_ON_INDEX THEN
+                        DBMS_OUTPUT.put_line('Se ignoraron algunas piezas ya incluidas.');
+            END;
+
+        END p_revisa;
 /
 
 
 
-/* [3]
+/* [4]
 Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO, TRIMESTRE, IVA_TOTAL siendo trimestre
 un numero de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
 Dar permiso de seleccion a los Administrativos.
@@ -283,7 +378,7 @@ SELECT * FROM AUTORACLE.FACTURA;
 
 
 
-/* [4]
+/* [5]
 Crear un paquete en PL/SQL de analisis de datos que contenga:
     1.  La funcion F_Calcular_Piezas: devolvera la media, minimo y maximo numero de unidades compradas (en cada lote)
         de una determinada pieza en un año concreto.
@@ -343,7 +438,7 @@ END;
 
 
 
-/* [5]
+/* [6]
 Añadir al modelo una tabla FIDELIZACIoN que permite almacenar un descuento por cliente y año.
 Crear un paquete en PL/SQL de gestion de descuentos.
     El procedimiento P_Calcular_Descuento, tomara un cliente y un año y calculara el descuento del que podra
@@ -413,7 +508,7 @@ END pck_gestion_descuentos;
 
 
 
-/* [6]
+/* [7]
 Crear un paquete en PL/SQL de gestion de empleados que incluya las operaciones para crear, borrar y modificar los datos de un
 empleado. Hay que tener en cuenta que algunos empleados tienen un usuario y, por tanto, al insertar o modificar un empleado,
 si su usuario no es nulo, habra que crear su usuario.
@@ -432,7 +527,7 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS IS
     -- PENDIENTE
 END;
 
--- [7] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
+-- [8] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
 -- informacion de fidelizacion y los datos de su vehiculo.
 
 CREATE OR REPLACE TRIGGER TR_Eliminar_Cliente_Fidelizado
@@ -443,7 +538,7 @@ BEGIN
 END;
 /
 
--- [8] Crear un JOB que ejecute el procedimiento P_REVISA todos los dias a las 21:00. Crear otro JOB que, anualmente
+-- [9] Crear un JOB que ejecute el procedimiento P_REVISA todos los dias a las 21:00. Crear otro JOB que, anualmente
 -- (el 31 de diciembre a las 23.55), llame a P_Recompensa.
 
 BEGIN
