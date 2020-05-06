@@ -514,47 +514,49 @@ END pck_gestion_descuentos;
 /
 
 CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_DESCUENTOS AS
-    PROCEDURE P_CALCULAR_DESCUENTO(cliente VARCHAR2, anno DATE) AS
+
+    PROCEDURE P_CALCULAR_DESCUENTO(cliente VARCHAR2, anno NUMBER) AS
+        v_descuento NUMBER := 0; -- comenzamos con descuento 0
+        prox_anno NUMBER := TO_NUMBER(anno) + 1;
+        facturas_pagadas NUMBER; -- contador para facturas (servicios) pagadas
+        citas_5_dias_espera NUMBER; -- contador para citas esperadas
+        servicios_mas_horas_espera NUMBER; -- contador para servicios esperados
+        media_horas_espera NUMBER; -- para calcular la media de horas de espera de los servicios
     BEGIN
-        IF
-        THEN
-            UPDATE fidelizacion F
-            SET F.descuento=F.descuento+0.01
-            WHERE F.cliente=cliente;
-        END IF;
-        IF (SELECT fecha_concertada-fecha_solicitud
-            FROM cita
-            WHERE cliente_idcliente=cliente) > 5
-        THEN
-            UPDATE fidelizacion F
-            SET F.descuento=F.descuento+0.01
-            WHERE F.cliente=cliente;
-        END IF;
-        IF  (SELECT S.fecrealizacion-S.fecapertura
-            FROM servicio S
-            WHERE S.idservicio IS IN
-            (SELECT S.idservicio FROM servicio S JOIN vehiculo V
-            ON S.vehiculo_numbastidor=V.numbastidor
-            WHERE S.vehiculo_numbastidor=V.numbastidor
-            AND V.cliente_idcliente=cliente))
-            >
-            (SELECT AVG(fecrealizacion-fecapertura)
-            FROM servicio
-            WHERE fecrealizacion IS NOT NULL)
-        THEN
-            UPDATE fidelizacion F
-            SET F.descuento=F.descuento+0.01
-            WHERE F.cliente=cliente;
-        END IF;
-        IF (SELECT F.descuento FROM fidelizacion F WHERE F.cliente=cliente)>10 THEN
-            UPDATE fidelizacion F SET F.descuento=10 WHERE F.cliente=cliente;
-        END IF;
-    END p_calcular_descuento;
+        -- acumulamos todos los posibles descuentos (hasta 10)
+        -- 1. Todos los servicios pagados (facturas) por el cliente (en ese año)
+        SELECT COUNT(*) INTO facturas_pagadas
+            FROM AUTORACLE.FACTURA
+            WHERE CLIENTE_IDCLIENTE = cliente AND TO_CHAR(FECEMISION, 'YYYY') = anno;
+
+        -- 2. Todas las citas donde el cliente tuvo que esperar mas de 5 dias (en ese año)
+        SELECT COUNT(*) INTO citas_5_dias_espera
+            FROM AUTORACLE.CITA
+            WHERE CLIENTE_IDCLIENTE = cliente AND
+                  ABS(FECHA_CONCERTADA - FECHA_SOLICITUD) > 5 AND
+                  TO_CHAR(FECHA_SOLICITUD, 'YYYY') = anno; -- cogemos la fecha mas antigua
+
+        -- 3. Todos los servicios dados al cliente donde tuvo que esperar mas de la media de dias de todos los servicios
+        SELECT AVG(FECREALIZACION - FECAPERTURA) INTO media_horas_espera FROM SERVICIO;
+        SELECT COUNT(*) INTO servicios_mas_horas_espera
+            FROM AUTORACLE.SERVICIO s
+            JOIN AUTORACLE.VEHICULO v ON s.VEHICULO_NUMBASTIDOR = v.NUMBASTIDOR
+            WHERE v.CLIENTE_IDCLIENTE = cliente AND
+                  TO_CHAR(s.FECAPERTURA, 'YYYY') = anno AND -- cogemos la fecha mas antigua
+                  (FECREALIZACION - FECAPERTURA) > media_horas_espera;
+
+        -- guardamos el descuento para el anno siguiente
+        v_descuento := (1 * facturas_pagadas) + (1 * citas_5_dias_espera) + (1 * servicios_mas_horas_espera);
+        v_descuento := GREATEST(v_descuento, 10); -- como maximo es un 10% descuento
+
+        INSERT INTO AUTORACLE.FIDELIZACION
+            VALUES (cliente, v_descuento, TO_CHAR(prox_anno)); -- el prox anno se calcula al principio
+    END;
 
     PROCEDURE P_APLICAR_DESCUENTO(cliente VARCHAR2, anno VARCHAR2) AS -- anno es un string "2000", "1965", etc
         v_descuento NUMBER := 0; -- por defecto el descuento es 0
     BEGIN
-        SELECT descuento INTO v_descuento
+        SELECT descuento INTO v_descuento -- obtiene el descuento (si es que existe)
         FROM AUTORACLE.FIDELIZACION
         WHERE CLIENTE_IDCLIENTE = cliente AND ANNO = anno;
 
