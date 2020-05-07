@@ -2,6 +2,7 @@
 -- Antonio J. Galan, Manuel Gonzalez, Pablo Rodriguez, Joaquin Terrasa
 
 -- { Por defecto, usamos el usuario "AUTORACLE" creado previamente en la BD }
+SET SERVEROUTPUT ON; -- para comprobar las funciones/procedimientos/triggers etc
 
 -- SHOW SERVEROUTPUT;
 SET SERVEROUTPUT ON;
@@ -357,34 +358,60 @@ CREATE OR REPLACE
 /
 
 /* [3]
-Añadir dos campos a la tabla factura: iva calculado y total.
-Implementar un procedimiento P_CALCULA_FACT
-que recorre los datos necesarios de las piezas utilizadas y 
-el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
+Añadir dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre
+los datos necesarios de las piezas utilizadas y el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
 */
 
-ALTER TABLE factura ADD (iva_calculado NUMBER,iva_total NUMBER);			
+ALTER TABLE factura ADD (iva_calculado NUMBER, iva_total NUMBER);			
 			
-			
-/* [4]
+CREATE OR REPLACE P_CALCULA_FACT AS
+    dummy NUMBER;
+BEGIN
+
+END;
+/
+
+/* [4] ----------- HECHO -----------
 Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO, TRIMESTRE, IVA_TOTAL siendo trimestre
 un numero de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
 Dar permiso de seleccion a los Administrativos.
 */
 
--- ||||| ESTA MAL! |||||
+-- Suponiendo que existe una vista V_COSTE_PIEZAS_TOTAL que proporcione, para cada factura, el coste total de piezas y
+-- [el coste total de horas trabajadas], y la fecha de emision de la factura
+-- Dada la arquitectura de la BD proporcionada, no hay manera de agregar las horas trabajadas por empleado.
+
+CREATE OR REPLACE VIEW AUTORACLE.V_COSTE_PIEZAS_TOTAL AS
+    SELECT f.IDFACTURA,
+           f.FECEMISION,
+           f.IVA,
+           SUM(p.PRECIOUNIDADVENTA) AS TOTAL_PIEZAS
+    FROM AUTORACLE.factura f
+    JOIN AUTORACLE.contiene c ON f.IDFACTURA = c.FACTURA_IDFACTURA
+    JOIN AUTORACLE.pieza p ON p.CODREF = c.PIEZA_CODREF
+    GROUP BY f.IDFACTURA, f.FECEMISION, f.IVA;
+
+SELECT * FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
+
+-- Sorry soy un paquete con los "groups by"
+-- https://www.oracletutorial.com/oracle-basics/oracle-group-by/
+
+CREATE OR REPLACE VIEW AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE AS
+    SELECT TO_CHAR(FECEMISION, 'YYYY') as "año",
+           TO_CHAR(FECEMISION, 'Q') as "cuatrimestre",
+           (IVA / 100) * TOTAL_PIEZAS as "iva_total"
+    FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
+    
+SELECT * FROM AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE;
 
 CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
-    SELECT UNIQUE(TO_CHAR(FECEMISION, 'YYYY')) AS "año",
-           TO_CHAR(FECEMISION, 'Q') AS "trimestre",
-           SUM(IVA) AS "iva_total"
-    FROM AUTORACLE.FACTURA
-    GROUP BY FECEMISION;
-
+    SELECT "año", "cuatrimestre", SUM("iva_total") as "iva_total"
+    FROM V_INTERMEDIA_IVA_TRIMESTRE
+    GROUP BY "año", "cuatrimestre";
+    
 SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE;
-SELECT * FROM AUTORACLE.FACTURA;
 
-
+GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE TO R_ADMINISTRATIVO;
 
 /* [5]
 Crear un paquete en PL/SQL de analisis de datos que contenga:
@@ -397,6 +424,13 @@ Crear un paquete en PL/SQL de analisis de datos que contenga:
         empleados involucrados los recompensa con un +/- 5% en su sueldo base respectivamente.
 */
 
+-- Por la definicion de la BD, hay una columna con un acento en la tabla LOTE. La renombramos
+ALTER TABLE LOTE
+    RENAME COLUMN "N�MERO_DE_PIEZAS" TO "NUMERO_DE_PIEZAS";
+
+DESC LOTE;
+DESC COMPRA;
+
 -- Primero, agrupamos las funciones y procedimientos en un paquete
 -- http://www.rebellionrider.com/how-to-create-pl-sql-packages-in-oracle-database/
 CREATE OR REPLACE PACKAGE PKG_AUTORACLE_ANALISIS AS
@@ -406,48 +440,123 @@ CREATE OR REPLACE PACKAGE PKG_AUTORACLE_ANALISIS AS
 END;
 
 -- Creamos todos los tipos propios que nos hagan falta
+-- DISCLAIMER: Faltaría pasar MEDIA_MIN_MAX_UNITS como "Record" en vez de como "Object"
 CREATE OR REPLACE TYPE MEDIA_MIN_MAX_UNITS AS OBJECT (
     media NUMBER,
     minimo NUMBER,
     maximo NUMBER);
 
+-- DISCLAIMER: Faltaría pasar TIEMPOS_SERVICIO como "Record" en vez de como "Object"
+CREATE OR REPLACE TYPE TIEMPOS_SERVICIO AS OBJECT (
+    dias NUMBER,
+    horas NUMBER);
+
 -- Creamos las funciones y procedimientos del paquete (RECOMIENDO probar a definirlas fuera del paquete para ver si
 -- compilan, y despues borrarlas)
 CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_AUTORACLE_ANALISIS IS
     -- 1.
-    CREATE OR REPLACE FUNCTION F_CALCULAR_PIEZAS(codref IN VARCHAR2, year in VARCHAR2) RETURN MEDIA_MIN_MAX_UNITS AS
+    CREATE OR REPLACE FUNCTION F_CALCULAR_PIEZAS(input_codref IN VARCHAR2, input_anno in VARCHAR2)
+    RETURN MEDIA_MIN_MAX_UNITS AS
         resultado MEDIA_MIN_MAX_UNITS;
+        media NUMBER := 0;
+        minimo NUMBER := 10e10;
+        maximo NUMBER := 0;
+        kounter NUMBER := 0;
+        CURSOR tabla IS
+            SELECT TO_CHAR(c.FECEMISION, 'YYYY') AS "ANNO", 
+                   l.PIEZA_CODREF AS "PIEZA_CODREF",
+                   l.NUMERO_DE_PIEZAS AS "NUMERO_DE_PIEZAS"
+            FROM AUTORACLE.COMPRA c
+            JOIN AUTORACLE.LOTE l ON c.IDCOMPRA = l.COMPRA_IDCOMPRA;
     BEGIN
-        -- PENDIENTE
+        FOR fila IN tabla LOOP
+            IF fila.ANNO = input_anno AND fila.PIEZA_CODREF = input_codref THEN -- este IF puede ir nel cursor nel WHERE
+                kounter := kounter + 1;
+                media := media + fila.NUMERO_DE_PIEZAS;
+                IF fila.NUMERO_DE_PIEZAS > maximo THEN
+                    maximo := fila.NUMERO_DE_PIEZAS;
+                END IF;
+                IF fila.NUMERO_DE_PIEZAS < minimo THEN
+                    minimo := fila.NUMERO_DE_PIEZAS;
+                END IF;
+            END IF;
+        END LOOP;
+
+        resultado.media :=  media / kounter;
+        resultado.minimo := minimo;
+        resultado.maximo := maximo;
+        RETURN resultado;
     END;
 
     -- 2. Es una funcion, pero entiendo que si se usa para TODOS los servicios, entonces es mejor un Procedimiento.
     -- Lo aclararia en el foro.
-    CREATE OR REPLACE FUNCTION F_CALCULAR_TIEMPOS
-        RETURNS TABLE(mediaDias NUMBER, mediaHoras NUMBER)
+    -- ESTE EJERCICIO NO LO TENGO CLARO (comprobad el CURSOR, creo que esta mal).
+    -- Hay que obtener la media de dias para UN SERVICIO o para todos los servicio de un tipo?????
+    -- Media de dias sobre un servicio no tiene sentido, pues UN SERVICIO (IDSERVICIO) SOLO SE HACE UNA VEZ
+    CREATE OR REPLACE FUNCTION F_CALCULAR_TIEMPOS(id_servicio IN NUMBER)
+    RETURNS TIEMPOS_SERVICIO AS -- deberia de devolver un "RECORD"
+        resultado TIEMPOS_SERVICIO;
+        CURSOR datos IS
+            SELECT SUM((s.FECREALIZACION - s.FECRECEPCION)) / COUNT(s.IDSERVICIO) AS MEDIADIAS,
+                   SUM(r.HORAS) / COUNT(s.IDSERVICIO) AS MEDIAHORAS,
+                   s.IDSERVICIO AS IDSERVICIO
+            FROM AUTORACLE.servicio s
+            JOIN AUTORACLE.reparacion r ON s.IDSERVICIO = r.IDSERVICIO;
     BEGIN
-        RETURN QUERY
-            SELECT SUM((s.FECREALIZACION - s.FECRECEPCION)) / COUNT(s.IDSERVICIO) AS MediaDias,
-                   SUM(r.HORAS) / COUNT(s.IDSERVICIO) AS MediaHoras
-            FROM servicio s
-            JOIN reparacion r ON s.IDSERVICIO = r.IDSERVICIO;
+        FOR fila IN DATOS LOOP
+            IF fila.IDSERVICIO = id_servicio THEN
+                resultado.dias = fila.MEDIADIAS;
+                resultado.horas = fila.MEDIAHORAS;
+            END IF;
+        END LOOP;
+        RETURN resultado;
     END;
 
-    -- 3. VALE! Creo que este procedimiento usa las dos funciones de arriba para cada servicio. Entonces las funciones
-    -- van para cada servicio (no se explica bien en el enunciado).
+    -- 3. VALE! Creo que este procedimiento usa las funcion del (2) para cada servicio.
     CREATE OR REPLACE PROCEDURE P_RECOMPENSA AS
-        dummy_var NUMBER;
+        servicio_mas_lento_horas NUMBER := 0; -- asi, el mas lento es el que menos dias tarda (por defecto)
+        servicio_mas_rapido_horas NUMBER := 10e10; -- asi, el mas rapido es el que mas dias tarda (por defecto)
+        servicio_mas_lento NUMBER;
+        servicio_mas_lento_idempleado NUMBER;
+        servicio_mas_rapido NUMBER;
+        servicio_mas_rapido_idempleado NUMBER;
+        CURSOR servicios IS
+            SELECT F_CALCULAR_TIEMPOS(s.IDSERVICIO).dias as MEDIA_DIAS,
+                   s.IDSERVICIO as IDSERVICIO,
+                   t.EMPLEADO_IDEMPLEADO as IDEMPLEADO
+            FROM AUTORACLE.SERVICIO s
+            JOIN AUTORACLE.TRABAJA t ON s.IDSERVICIO = t.SERVICIO_IDSERVICIO;
     BEGIN
-        FOR numero IN (SELECT 1 FROM DUAL) LOOP
-            DBMS_OUTPUT.PUT_LINE('Do nothing');
+        -- seguro que hay una forma mas sencilla de sacar el minimo y el maximo
+        FOR servicio IN servicios LOOP
+            IF servicio.MEDIA_DIAS < servicio_mas_rapido_horas THEN
+                servicio_mas_rapido = servicio.IDSERVICIO;
+                servicio_mas_rapido_horas = servicio.MEDIA_DIAS;
+                servicio_mas_rapido_idempleado = servicio.IDEMPLEADO;
+            END IF;
+
+            IF servicio.MEDIA_DIAS > servicio_mas_lento_horas THEN
+                servicio_mas_lento = servicio.IDSERVICIO;
+                servicio_mas_lento_horas = servicio.MEDIA_DIAS;
+                servicio_mas_lento_idempleado = servicio.IDEMPLEADO;
+            END IF;
         END LOOP;
+
+        -- ya tenemos el servicio mas lento y el mas rapido
+        UPDATE AUTORACLE.EMPLEADO
+            SET SUELDOBASE = SUELDOBASE - (0.05 * SUELDOBASE)
+            WHERE IDEMPLEADO = servicio_mas_lento_idempleado;
+
+        UPDATE AUTORACLE.EMPLEADO
+            SET SUELDOBASE = SUELDOBASE + (0.05 * SUELDOBASE)
+            WHERE IDEMPLEADO = servicio_mas_rapido_idempleado;
     END;
 END;
 
 
 
 /* [6]
-Añadir al modelo una tabla FIDELIZACIoN que permite almacenar un descuento por cliente y año.
+Añadir al modelo una tabla FIDELIZACION que permite almacenar un descuento por cliente y año.
 Crear un paquete en PL/SQL de gestion de descuentos.
     El procedimiento P_Calcular_Descuento, tomara un cliente y un año y calculara el descuento del que podra
     disfrutar el año siguiente. Para ello, hasta un maximo del 10%, ira incrementando el descuento en un 1%,
@@ -458,60 +567,103 @@ Crear un paquete en PL/SQL de gestion de descuentos.
         3.  Por cada servicio proporcionado en el que tuvo que esperar mas de la media de todos los servicios.
 */
 
-CREATE TABLE autoracle.fidelizacion(
-    "CLIENTE" VARCHAR2(16),
-    "DESCUENTO" NUMBER,
-    "ANNO" DATE
+CREATE TABLE AUTORACLE.FIDELIZACION(
+    "CLIENTE_IDCLIENTE" VARCHAR2(16),
+    "DESCUENTO" NUMBER(3), -- de 0 a 100
+    "ANNO" VARCHAR2(4) -- de 0 a 9999
 );
 
-CREATE OR REPLACE PACKAGE autoracle.pck_gestion_descuentos AS
+-- Para asegurarnos de que hay UN descuento POR cliente y año, creamos un trigger
+CREATE OR REPLACE TRIGGER AUTORACLE.TR_ASEGURAR_FIDELIZACION
+    BEFORE INSERT OR UPDATE ON AUTORACLE.FIDELIZACION FOR EACH ROW
+DECLARE
+    descuento_ya_existe EXCEPTION;
+    CURSOR tabla IS
+        SELECT anno
+        FROM AUTORACLE.FIDELIZACION
+        WHERE cliente_idcliente = :new.CLIENTE_IDCLIENTE;
+BEGIN
+    FOR fila IN tabla LOOP
+        IF fila.ANNO = :new.ANNO THEN -- si el cliente y el anno coinciden: ERROR
+            RAISE descuento_ya_existe;
+        END IF;
+    END LOOP;
+EXCEPTION
+    WHEN descuento_ya_existe THEN
+        RAISE_APPLICATION_ERROR(-20015, 'Ya existe un descuento para '||:new.CLIENTE_IDCLIENTE||' en el año '||:new.ANNO);
+END;
+
+INSERT ALL -- agregamos datos a la tabla
+    INTO AUTORACLE.FIDELIZACION VALUES ('789', 10, '2020')
+    INTO AUTORACLE.FIDELIZACION VALUES ('789', 20, '2019')
+    INTO AUTORACLE.FIDELIZACION VALUES ('16', 35, '2008')
+    INTO AUTORACLE.FIDELIZACION VALUES ('420', 5, '2020')
+SELECT 1 FROM DUAL;
+COMMIT;
+
+-- Ahora, creamos el paquete :)
+CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_DESCUENTOS AS
     PROCEDURE p_calcular_descuento(cliente VARCHAR2,anno DATE);
     PROCEDURE p_aplicar_descuento(cliente VARCHAR2,anno DATE);
 END pck_gestion_descuentos;
 /
 
-CREATE OR REPLACE PACKAGE BODY autoracle.pck_gestion_descuentos AS
-    PROCEDURE p_calcular_descuento(cliente VARCHAR2,anno DATE) AS
-    BEGIN
-        IF
-        THEN
-            UPDATE fidelizacion F
-            SET F.descuento=F.descuento+0.01
-            WHERE F.cliente=cliente;
-        END IF;
-        IF (SELECT fecha_concertada-fecha_solicitud
-            FROM cita
-            WHERE cliente_idcliente=cliente) > 5
-        THEN
-            UPDATE fidelizacion F
-            SET F.descuento=F.descuento+0.01
-            WHERE F.cliente=cliente;
-        END IF;
-        IF  (SELECT S.fecrealizacion-S.fecapertura
-            FROM servicio S
-            WHERE S.idservicio IS IN
-            (SELECT S.idservicio FROM servicio S JOIN vehiculo V
-            ON S.vehiculo_numbastidor=V.numbastidor
-            WHERE S.vehiculo_numbastidor=V.numbastidor
-            AND V.cliente_idcliente=cliente))
-            >
-            (SELECT AVG(fecrealizacion-fecapertura)
-            FROM servicio
-            WHERE fecrealizacion IS NOT NULL)
-        THEN
-            UPDATE fidelizacion F
-            SET F.descuento=F.descuento+0.01
-            WHERE F.cliente=cliente;
-        END IF;
-        IF (SELECT F.descuento FROM fidelizacion F WHERE F.cliente=cliente)>10 THEN
-            UPDATE fidelizacion F SET F.descuento=10 WHERE F.cliente=cliente;
-        END IF;
-    END p_calcular_descuento;
-    PROCEDURE p_aplicar_descuento(cliente VARCHAR2,anno DATE) AS
-    BEGIN
+CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_DESCUENTOS AS
 
-    END p_aplicar_descuento;
-END pck_gestion_descuentos;
+    PROCEDURE P_CALCULAR_DESCUENTO(cliente VARCHAR2, anno NUMBER) AS
+        v_descuento NUMBER := 0; -- comenzamos con descuento 0
+        prox_anno NUMBER := TO_NUMBER(anno) + 1;
+        facturas_pagadas NUMBER; -- contador para facturas (servicios) pagadas
+        citas_5_dias_espera NUMBER; -- contador para citas esperadas
+        servicios_mas_horas_espera NUMBER; -- contador para servicios esperados
+        media_horas_espera NUMBER; -- para calcular la media de horas de espera de los servicios
+    BEGIN
+        -- acumulamos todos los posibles descuentos (hasta 10)
+        -- 1. Todos los servicios pagados (facturas) por el cliente (en ese año)
+        SELECT COUNT(*) INTO facturas_pagadas
+            FROM AUTORACLE.FACTURA
+            WHERE CLIENTE_IDCLIENTE = cliente AND TO_CHAR(FECEMISION, 'YYYY') = anno;
+
+        -- 2. Todas las citas donde el cliente tuvo que esperar mas de 5 dias (en ese año)
+        SELECT COUNT(*) INTO citas_5_dias_espera
+            FROM AUTORACLE.CITA
+            WHERE CLIENTE_IDCLIENTE = cliente AND
+                  ABS(FECHA_CONCERTADA - FECHA_SOLICITUD) > 5 AND
+                  TO_CHAR(FECHA_SOLICITUD, 'YYYY') = anno; -- cogemos la fecha mas antigua
+
+        -- 3. Todos los servicios dados al cliente donde tuvo que esperar mas de la media de dias de todos los servicios
+        SELECT AVG(FECREALIZACION - FECAPERTURA) INTO media_horas_espera FROM SERVICIO;
+        SELECT COUNT(*) INTO servicios_mas_horas_espera
+            FROM AUTORACLE.SERVICIO s
+            JOIN AUTORACLE.VEHICULO v ON s.VEHICULO_NUMBASTIDOR = v.NUMBASTIDOR
+            WHERE v.CLIENTE_IDCLIENTE = cliente AND
+                  TO_CHAR(s.FECAPERTURA, 'YYYY') = anno AND -- cogemos la fecha mas antigua
+                  (FECREALIZACION - FECAPERTURA) > media_horas_espera;
+
+        -- guardamos el descuento para el anno siguiente
+        v_descuento := (1 * facturas_pagadas) + (1 * citas_5_dias_espera) + (1 * servicios_mas_horas_espera);
+        v_descuento := GREATEST(v_descuento, 10); -- como maximo es un 10% descuento
+
+        INSERT INTO AUTORACLE.FIDELIZACION
+            VALUES (cliente, v_descuento, TO_CHAR(prox_anno)); -- el prox anno se calcula al principio
+    END;
+
+    PROCEDURE P_APLICAR_DESCUENTO(cliente VARCHAR2, anno VARCHAR2) AS -- anno es un string "2000", "1965", etc
+        v_descuento NUMBER := 0; -- por defecto el descuento es 0
+    BEGIN
+        SELECT descuento INTO v_descuento -- obtiene el descuento (si es que existe)
+        FROM AUTORACLE.FIDELIZACION
+        WHERE CLIENTE_IDCLIENTE = cliente AND ANNO = anno;
+
+        UPDATE AUTORACLE.FACTURA
+            SET DESCUENTO = v_descuento
+            WHERE CLIENTE_IDCLIENTE = cliente AND TO_CHAR(FECEMISION, 'YYYY') = anno;
+    EXCEPTION
+        WHEN no_data_found THEN -- si el "SELECT .. INTO .." no obtiene nada
+            RAISE_APPLICATION_ERROR(-20016, 'P_APLICAR_DESCUENTO Error: No hay descuento para '||cliente||', '||anno);
+    END;
+
+END;
 /
 
 
