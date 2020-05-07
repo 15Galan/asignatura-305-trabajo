@@ -358,16 +358,33 @@ CREATE OR REPLACE
 /
 
 /* [3]
-Añadir dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre
-los datos necesarios de las piezas utilizadas y el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
+Añadir dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre los
+datos necesarios de las piezas utilizadas y el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
 */
 
-ALTER TABLE factura ADD (iva_calculado NUMBER, iva_total NUMBER);			
-			
-CREATE OR REPLACE P_CALCULA_FACT AS
-    dummy NUMBER;
-BEGIN
+ALTER TABLE AUTORACLE.FACTURA
+    ADD (iva_calculado NUMBER, total NUMBER);			
+	
+-- inicializamos a 0 todos los valores (iva_calculado, total)
+-- de esta forma despues lo unico que hacemos es ir acumulando los valores
+UPDATE AUTORACLE.FACTURA
+    SET iva_calculado = 0, total = 0;
 
+CREATE OR REPLACE AUTORACLE.P_CALCULA_FACT AS
+    iva_mult NUMBER;
+    CURSOR tabla IS
+        SELECT f.IDFACTURA, f.IVA, p.CODREF, p.PRECIOUNIDADVENTA, p.PRECIOUNIDADCOMPRA
+        FROM AUTORACLE.FACTURA f
+        JOIN AUTORACLE.CONTIENE c ON c.FACTURA_IDFACTURA = f.IDFACTURA
+        JOIN AUTORACLE.PIEZA p ON c.PIEZA_CODREF = p.CODREF;
+BEGIN
+    FOR fila IN tabla LOOP
+        iva_mult = 1 + (fila.IVA / 100); -- el IVA es un factor de crecimiento
+        UPDATE AUTORACLE.FACTURA
+            SET IVA_CALCULADO = IVA_CALCULADO + iva_mult * fila.PRECIOUNIDADVENTA,
+                TOTAL = TOTAL + (iva_mult * fila.PRECIOUNIDADVENTA) - fila.PRECIOUNIDADCOMPRA
+            WHERE IDFACTURA = fila.IDFACTURA;
+    END LOOP;
 END;
 /
 
