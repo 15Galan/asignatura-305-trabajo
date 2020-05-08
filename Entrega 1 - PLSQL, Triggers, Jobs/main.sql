@@ -605,114 +605,133 @@ END pkg_autoracle_analisis;
 
 
 /* [6]
-Añadir al modelo una tabla FIDELIZACION que permite almacenar un descuento por cliente y año.
-Crear un paquete en PL/SQL de gestion de descuentos.
-    El procedimiento P_Calcular_Descuento, tomara un cliente y un año y calculara el descuento del que podra
-    disfrutar el año siguiente. Para ello, hasta un maximo del 10%, ira incrementando el descuento en un 1%,
-    por cada una de las siguientes acciones:
-        1.  Por cada servicio pagado por el cliente.
-        2.  Por cada ocasion en la que el cliente tuvo que esperar mas de 5 dias desde que solicito la cita hasta
-            que se concerto.
-        3.  Por cada servicio proporcionado en el que tuvo que esperar mas de la media de todos los servicios.
+Añadir al modelo una tabla FIDELIZACION que permite almacenar un descuento por
+cliente y año; y crear un paquete en PL/SQL de gestion de descuentos.
+    1.  El procedimiento P_Calcular_Descuento, tomara un cliente y un año y
+        calculara el descuento del que podra disfrutar el año siguiente. Para
+        ello, hasta un maximo del 10%, ira incrementando el descuento en un 1%
+        por cada una de las siguientes acciones:
+            * Por cada servicio pagado por el cliente.
+            * Por cada ocasion en la que el cliente tuvo que esperar mas de 5
+              dias desde que solicito la cita hasta que se concerto.
+            * Por cada servicio proporcionado en el que tuvo que esperar mas de
+              la media de todos los servicios.
+    2.  El procedimiento P_Aplicar_descuento tomara el año y el cliente. Si en
+        la tabla FIDELIZACION hay un descuento calculado a aplicar ese año,
+        lo hará para todas las facturas que encuentre (en ese año).
 */
 
 CREATE TABLE AUTORACLE.FIDELIZACION(
-    "CLIENTE_IDCLIENTE" VARCHAR2(16),
-    "DESCUENTO" NUMBER(3), -- de 0 a 100
-    "ANNO" VARCHAR2(4) -- de 0 a 9999
+    cliente_idcliente VARCHAR2(16),
+    descuento NUMBER(3),            -- de 0 a 100
+    anno NUMBER(4)                  -- de 0 a 9999
 );
 
 -- Para asegurarnos de que hay UN descuento POR cliente y año, creamos un trigger
-CREATE OR REPLACE TRIGGER AUTORACLE.TR_ASEGURAR_FIDELIZACION
-    BEFORE INSERT OR UPDATE ON AUTORACLE.FIDELIZACION FOR EACH ROW
-DECLARE
-    descuento_ya_existe EXCEPTION;
-    CURSOR tabla IS
-        SELECT anno
-        FROM AUTORACLE.FIDELIZACION
-        WHERE cliente_idcliente = :new.CLIENTE_IDCLIENTE;
-BEGIN
-    FOR fila IN tabla LOOP
-        IF fila.ANNO = :new.ANNO THEN -- si el cliente y el anno coinciden: ERROR
-            RAISE descuento_ya_existe;
-        END IF;
-    END LOOP;
-EXCEPTION
-    WHEN descuento_ya_existe THEN
-        RAISE_APPLICATION_ERROR(-20015, 'Ya existe un descuento para '||:new.CLIENTE_IDCLIENTE||' en el año '||:new.ANNO);
-END;
+CREATE OR REPLACE
+  TRIGGER AUTORACLE.TR_ASEGURAR_FIDELIZACION
+    BEFORE INSERT OR UPDATE
+      ON AUTORACLE.FIDELIZACION FOR EACH ROW
 
-INSERT ALL -- agregamos datos a la tabla
-    INTO AUTORACLE.FIDELIZACION VALUES ('789', 10, '2020')
-    INTO AUTORACLE.FIDELIZACION VALUES ('789', 20, '2019')
-    INTO AUTORACLE.FIDELIZACION VALUES ('16', 35, '2008')
-    INTO AUTORACLE.FIDELIZACION VALUES ('420', 5, '2020')
-SELECT 1 FROM DUAL;
-COMMIT;
+    DECLARE
+        descuento_ya_existe EXCEPTION;
 
--- Ahora, creamos el paquete :)
-CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_DESCUENTOS AS
-    PROCEDURE p_calcular_descuento(cliente VARCHAR2,anno DATE);
-    PROCEDURE p_aplicar_descuento(cliente VARCHAR2,anno DATE);
-END pck_gestion_descuentos;
+        CURSOR tabla IS
+            SELECT anno
+              FROM AUTORACLE.FIDELIZACION
+                WHERE cliente_idcliente = :new.CLIENTE_IDCLIENTE;
+
+    BEGIN
+        FOR fila IN tabla LOOP
+            IF fila.ANNO = :new.ANNO THEN -- si el cliente y el anno coinciden: ERROR
+                RAISE descuento_ya_existe;
+
+            END IF;
+
+        END LOOP;
+
+    EXCEPTION
+        WHEN descuento_ya_existe THEN
+            RAISE_APPLICATION_ERROR(-20015, 'Ya existe un descuento para el cliente '||:new.CLIENTE_IDCLIENTE||' en el año '||:new.ANNO);
+    END;
 /
 
-CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_DESCUENTOS AS
 
-    PROCEDURE P_CALCULAR_DESCUENTO(cliente VARCHAR2, anno NUMBER) AS
-        v_descuento NUMBER := 0; -- comenzamos con descuento 0
-        prox_anno NUMBER := TO_NUMBER(anno) + 1;
-        facturas_pagadas NUMBER; -- contador para facturas (servicios) pagadas
-        citas_5_dias_espera NUMBER; -- contador para citas esperadas
-        servicios_mas_horas_espera NUMBER; -- contador para servicios esperados
-        media_horas_espera NUMBER; -- para calcular la media de horas de espera de los servicios
-    BEGIN
-        -- acumulamos todos los posibles descuentos (hasta 10)
-        -- 1. Todos los servicios pagados (facturas) por el cliente (en ese año)
-        SELECT COUNT(*) INTO facturas_pagadas
-            FROM AUTORACLE.FACTURA
-            WHERE CLIENTE_IDCLIENTE = cliente AND TO_CHAR(FECEMISION, 'YYYY') = anno;
+-- Ahora, creamos el paquete :)
+CREATE OR REPLACE
+    PACKAGE AUTORACLE.PKG_GESTION_DESCUENTOS AS
+        PROCEDURE p_calcular_descuento(cliente VARCHAR2, anno NUMBER);
+        PROCEDURE p_aplicar_descuento(cliente VARCHAR2, anno NUMBER);
 
-        -- 2. Todas las citas donde el cliente tuvo que esperar mas de 5 dias (en ese año)
-        SELECT COUNT(*) INTO citas_5_dias_espera
-            FROM AUTORACLE.CITA
-            WHERE CLIENTE_IDCLIENTE = cliente AND
-                  ABS(FECHA_CONCERTADA - FECHA_SOLICITUD) > 5 AND
-                  TO_CHAR(FECHA_SOLICITUD, 'YYYY') = anno; -- cogemos la fecha mas antigua
+END pkg_gestion_descuentos;
+/
 
-        -- 3. Todos los servicios dados al cliente donde tuvo que esperar mas de la media de dias de todos los servicios
-        SELECT AVG(FECREALIZACION - FECAPERTURA) INTO media_horas_espera FROM SERVICIO;
-        SELECT COUNT(*) INTO servicios_mas_horas_espera
-            FROM AUTORACLE.SERVICIO s
-            JOIN AUTORACLE.VEHICULO v ON s.VEHICULO_NUMBASTIDOR = v.NUMBASTIDOR
-            WHERE v.CLIENTE_IDCLIENTE = cliente AND
-                  TO_CHAR(s.FECAPERTURA, 'YYYY') = anno AND -- cogemos la fecha mas antigua
-                  (FECREALIZACION - FECAPERTURA) > media_horas_espera;
+CREATE OR REPLACE
+    PACKAGE BODY AUTORACLE.PKG_GESTION_DESCUENTOS AS
 
-        -- guardamos el descuento para el anno siguiente
-        v_descuento := (1 * facturas_pagadas) + (1 * citas_5_dias_espera) + (1 * servicios_mas_horas_espera);
-        v_descuento := GREATEST(v_descuento, 10); -- como maximo es un 10% descuento
+        PROCEDURE P_CALCULAR_DESCUENTO(cliente VARCHAR2, anno NUMBER) AS
+            v_descuento NUMBER := 0;    -- Comenzamos con descuento 0
+            facturas NUMBER;            -- Contador para facturas pagadas
+            citas5dias NUMBER;          -- Contador para citas esperadas
+            servicios_largos NUMBER;    -- Contador para servicios esperados
+            media_horas NUMBER;         -- Horas de espera media de los servicios
 
-        INSERT INTO AUTORACLE.FIDELIZACION
-            VALUES (cliente, v_descuento, TO_CHAR(prox_anno)); -- el prox anno se calcula al principio
-    END;
+            BEGIN
+                -- Todas las facturas del cliente (en ese año)
+                SELECT COUNT(*) INTO facturas
+                    FROM AUTORACLE.FACTURA
+                        WHERE CLIENTE_IDCLIENTE = cliente
+                            AND TO_CHAR(FECEMISION, 'YYYY') = TO_CHAR(anno);
 
-    PROCEDURE P_APLICAR_DESCUENTO(cliente VARCHAR2, anno VARCHAR2) AS -- anno es un string "2000", "1965", etc
-        v_descuento NUMBER := 0; -- por defecto el descuento es 0
-    BEGIN
-        SELECT descuento INTO v_descuento -- obtiene el descuento (si es que existe)
-        FROM AUTORACLE.FIDELIZACION
-        WHERE CLIENTE_IDCLIENTE = cliente AND ANNO = anno;
 
-        UPDATE AUTORACLE.FACTURA
-            SET DESCUENTO = v_descuento
-            WHERE CLIENTE_IDCLIENTE = cliente AND TO_CHAR(FECEMISION, 'YYYY') = anno;
-    EXCEPTION
-        WHEN no_data_found THEN -- si el "SELECT .. INTO .." no obtiene nada
-            RAISE_APPLICATION_ERROR(-20016, 'P_APLICAR_DESCUENTO Error: No hay descuento para '||cliente||', '||anno);
-    END;
+                -- Todas las citas con mas de 5 dias de espera (en ese año)
+                SELECT COUNT(*) INTO citas5dias
+                    FROM AUTORACLE.CITA
+                        WHERE CLIENTE_IDCLIENTE = cliente
+                            AND ABS(FECHA_CONCERTADA - FECHA_SOLICITUD) > 5
+                            AND TO_CHAR(FECHA_SOLICITUD, 'YYYY') = TO_CHAR(anno);
 
-END;
+
+                SELECT AVG(FECREALIZACION - FECAPERTURA) INTO media_horas
+                    FROM SERVICIO;
+
+                -- Todos los servicios con mas de la media de dias de espera (en ese año)
+                SELECT COUNT(*) INTO servicios_largos
+                    FROM AUTORACLE.SERVICIO s
+                        JOIN AUTORACLE.VEHICULO v ON s.VEHICULO_NUMBASTIDOR = v.NUMBASTIDOR
+                        WHERE v.CLIENTE_IDCLIENTE = cliente
+                            AND TO_CHAR(s.FECAPERTURA, 'YYYY') = TO_CHAR(anno)
+                            AND (FECREALIZACION - FECAPERTURA) > media_horas;
+
+                -- Guardamos el descuento para el año siguiente (maximo 10%)
+                v_descuento := LEAST(facturas + citas5dias + servicios_largos, 10);
+
+                INSERT INTO AUTORACLE.FIDELIZACION
+                    VALUES (cliente, v_descuento, anno + 1);
+
+            END;
+
+        PROCEDURE P_APLICAR_DESCUENTO(cliente VARCHAR2, anno NUMBER) AS
+            v_descuento NUMBER := 0;    -- Por defecto el descuento es 0
+
+            BEGIN
+                SELECT descuento INTO v_descuento   -- Descuento (si existe)
+                    FROM AUTORACLE.FIDELIZACION F
+                        WHERE CLIENTE_IDCLIENTE = cliente
+                            AND TO_NUMBER(F.anno) = anno;
+
+                UPDATE AUTORACLE.FACTURA
+                    SET DESCUENTO = v_descuento
+                        WHERE CLIENTE_IDCLIENTE = cliente
+                            AND TO_CHAR(FECEMISION, 'YYYY') = TO_CHAR(anno);
+
+            EXCEPTION
+                WHEN no_data_found THEN     -- Si no existe el descuento...
+                    RAISE_APPLICATION_ERROR(-20016, 'P_APLICAR_DESCUENTO Error: No hay descuento para el cliente '||cliente||' para el año '||anno);
+
+            END;
+
+END pkg_gestion_descuentos;
 /
 
 
