@@ -358,7 +358,7 @@ CREATE OR REPLACE
 /
 
 /* [3]
-Añadir dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre los
+AÃ±adir dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre los
 datos necesarios de las piezas utilizadas y el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
 */
 
@@ -389,7 +389,7 @@ END;
 /
 
 /* [4] ----------- HECHO -----------
-Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO, TRIMESTRE, IVA_TOTAL siendo trimestre
+Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÃO, TRIMESTRE, IVA_TOTAL siendo trimestre
 un numero de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
 Dar permiso de seleccion a los Administrativos.
 */
@@ -414,7 +414,7 @@ SELECT * FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
 -- https://www.oracletutorial.com/oracle-basics/oracle-group-by/
 
 CREATE OR REPLACE VIEW AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE AS
-    SELECT TO_CHAR(FECEMISION, 'YYYY') as "año",
+    SELECT TO_CHAR(FECEMISION, 'YYYY') as "aÃ±o",
            TO_CHAR(FECEMISION, 'Q') as "cuatrimestre",
            (IVA / 100) * TOTAL_PIEZAS as "iva_total"
     FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
@@ -422,9 +422,9 @@ CREATE OR REPLACE VIEW AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE AS
 SELECT * FROM AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE;
 
 CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
-    SELECT "año", "cuatrimestre", SUM("iva_total") as "iva_total"
+    SELECT "aÃ±o", "cuatrimestre", SUM("iva_total") as "iva_total"
     FROM V_INTERMEDIA_IVA_TRIMESTRE
-    GROUP BY "año", "cuatrimestre";
+    GROUP BY "aÃ±o", "cuatrimestre";
 
 SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE;
 
@@ -433,7 +433,7 @@ GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE TO R_ADMINISTRATIVO;
 /* [5]
 Crear un paquete en PL/SQL de analisis de datos que contenga:
     1.  La funcion F_Calcular_Piezas: devolvera la media, minimo y maximo numero
-        de unidades compradas (en cada lote) de una determinada pieza en un año
+        de unidades compradas (en cada lote) de una determinada pieza en un aÃ±o
         concreto.
     2.  La funcion F_Calcular_Tiempos: devolvera la media de dias en las que se
         termina un servicio (Fecha de realizacion - Fecha de entrada en taller)
@@ -605,10 +605,10 @@ END pkg_autoracle_analisis;
 
 
 /* [6]
-Añadir al modelo una tabla FIDELIZACION que permite almacenar un descuento por
-cliente y año; y crear un paquete en PL/SQL de gestion de descuentos.
-    1.  El procedimiento P_Calcular_Descuento, tomara un cliente y un año y
-        calculara el descuento del que podra disfrutar el año siguiente. Para
+AÃ±adir al modelo una tabla FIDELIZACION que permite almacenar un descuento por
+cliente y aÃ±o; y crear un paquete en PL/SQL de gestion de descuentos.
+    1.  El procedimiento P_Calcular_Descuento, tomara un cliente y un aÃ±o y
+        calculara el descuento del que podra disfrutar el aÃ±o siguiente. Para
         ello, hasta un maximo del 10%, ira incrementando el descuento en un 1%
         por cada una de las siguientes acciones:
             * Por cada servicio pagado por el cliente.
@@ -616,9 +616,9 @@ cliente y año; y crear un paquete en PL/SQL de gestion de descuentos.
               dias desde que solicito la cita hasta que se concerto.
             * Por cada servicio proporcionado en el que tuvo que esperar mas de
               la media de todos los servicios.
-    2.  El procedimiento P_Aplicar_descuento tomara el año y el cliente. Si en
-        la tabla FIDELIZACION hay un descuento calculado a aplicar ese año,
-        lo hará para todas las facturas que encuentre (en ese año).
+    2.  El procedimiento P_Aplicar_descuento tomara el aÃ±o y el cliente. Si en
+        la tabla FIDELIZACION hay un descuento calculado a aplicar ese aÃ±o,
+        lo harÃ¡ para todas las facturas que encuentre (en ese aÃ±o).
 */
 
 CREATE TABLE AUTORACLE.FIDELIZACION(
@@ -627,7 +627,7 @@ CREATE TABLE AUTORACLE.FIDELIZACION(
     anno NUMBER(4)                  -- de 0 a 9999
 );
 
--- Para asegurarnos de que hay UN descuento POR cliente y año, creamos un trigger
+-- Para asegurarnos de que hay UN descuento POR cliente y aÃ±o, creamos un trigger
 CREATE OR REPLACE
   TRIGGER AUTORACLE.TR_ASEGURAR_FIDELIZACION
     BEFORE INSERT OR UPDATE
@@ -652,7 +652,7 @@ CREATE OR REPLACE
 
     EXCEPTION
         WHEN descuento_ya_existe THEN
-            RAISE_APPLICATION_ERROR(-20015, 'Ya existe un descuento para el cliente '||:new.CLIENTE_IDCLIENTE||' en el año '||:new.ANNO);
+            RAISE_APPLICATION_ERROR(-20015, 'Ya existe un descuento para el cliente '||:new.CLIENTE_IDCLIENTE||' en el aÃ±o '||:new.ANNO);
     END;
 /
 
@@ -677,14 +677,14 @@ CREATE OR REPLACE
             media_horas NUMBER;         -- Horas de espera media de los servicios
 
             BEGIN
-                -- Todas las facturas del cliente (en ese año)
+                -- Todas las facturas del cliente (en ese aÃ±o)
                 SELECT COUNT(*) INTO facturas
                     FROM AUTORACLE.FACTURA
                         WHERE CLIENTE_IDCLIENTE = cliente
                             AND TO_CHAR(FECEMISION, 'YYYY') = TO_CHAR(anno);
 
 
-                -- Todas las citas con mas de 5 dias de espera (en ese año)
+                -- Todas las citas con mas de 5 dias de espera (en ese aÃ±o)
                 SELECT COUNT(*) INTO citas5dias
                     FROM AUTORACLE.CITA
                         WHERE CLIENTE_IDCLIENTE = cliente
@@ -695,7 +695,7 @@ CREATE OR REPLACE
                 SELECT AVG(FECREALIZACION - FECAPERTURA) INTO media_horas
                     FROM SERVICIO;
 
-                -- Todos los servicios con mas de la media de dias de espera (en ese año)
+                -- Todos los servicios con mas de la media de dias de espera (en ese aÃ±o)
                 SELECT COUNT(*) INTO servicios_largos
                     FROM AUTORACLE.SERVICIO s
                         JOIN AUTORACLE.VEHICULO v ON s.VEHICULO_NUMBASTIDOR = v.NUMBASTIDOR
@@ -703,7 +703,7 @@ CREATE OR REPLACE
                             AND TO_CHAR(s.FECAPERTURA, 'YYYY') = TO_CHAR(anno)
                             AND (FECREALIZACION - FECAPERTURA) > media_horas;
 
-                -- Guardamos el descuento para el año siguiente (maximo 10%)
+                -- Guardamos el descuento para el aÃ±o siguiente (maximo 10%)
                 v_descuento := LEAST(facturas + citas5dias + servicios_largos, 10);
 
                 INSERT INTO AUTORACLE.FIDELIZACION
@@ -727,7 +727,7 @@ CREATE OR REPLACE
 
             EXCEPTION
                 WHEN no_data_found THEN     -- Si no existe el descuento...
-                    RAISE_APPLICATION_ERROR(-20016, 'P_APLICAR_DESCUENTO Error: No hay descuento para el cliente '||cliente||' para el año '||anno);
+                    RAISE_APPLICATION_ERROR(-20016, 'P_APLICAR_DESCUENTO Error: No hay descuento para el cliente '||cliente||' para el aÃ±o '||anno);
 
             END;
 
@@ -806,7 +806,7 @@ BEGIN
 
     delete FROM empleado
     where IDEMPLEADO = ide;
-    --�Cuando se elimina el empleado se elimina su usuario ? 
+    --¿Cuando se elimina el empleado se elimina su usuario ? 
     -- SELECT USERNAME INTO usuario 
     -- FROM ALL_USERS WHERE USER_ID = ide; --
     
@@ -834,15 +834,79 @@ END;
 -- [9] Crear un JOB que ejecute el procedimiento P_REVISA todos los dias a las 21:00. Crear otro JOB que, anualmente
 -- (el 31 de diciembre a las 23.55), llame a P_Recompensa.
 
+--BEGIN
+--    DBMS_SCHEDULER.CREATE_JOB (
+--        job_name => 'Llamada_A_Recompensas',
+--        job_type => 'PLSQL_BLOCK',
+--        job_action => 'BEGIN PROCEDURE P_Recompensa END;',
+--        start_date => TO_DATE('2020-12-31 23:55:00' , 'YYYY-MM-DD HH24:MI:SS'),
+--        repeat_interval => 'FREQ = YEARLY; INTERVAL=1',
+--        enabled => TRUE,
+--        comments => 'Llama al procedimiento P_Recompensa anualmente el 31 de Diciembre a las 23.55');
+--
+--END;
+--/
+
 BEGIN
     DBMS_SCHEDULER.CREATE_JOB (
-        job_name => 'Llamada_A_Recompensas',
-        job_type => 'PLSQL_BLOCK',
-        job_action => 'BEGIN PROCEDURE P_Recompensa END;',
-        start_date => TO_DATE('2020-12-31 23:55:00' , 'YYYY-MM-DD HH24:MI:SS'),
-        repeat_interval => 'FREQ = YEARLY; INTERVAL=1',
-        enabled => TRUE,
-        comments => 'Llama al procedimiento P_Recompensa anualmente el 31 de Diciembre a las 23.55');
+            job_name => '"AUTORACLE"."JOB_REVISA"',
+            job_type => 'STORED_PROCEDURE',
+            job_action => 'AUTORACLE.P_REVISA',
+            number_of_arguments => 0,
+            start_date => NULL,
+            repeat_interval => 'FREQ=DAILY;BYTIME=210000',
+            end_date => NULL,
+            enabled => FALSE,
+            auto_drop => FALSE,
+            comments => 'Ejecuta el procedimiento p_revisa');
 
+         
+     
+ 
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"AUTORACLE"."JOB_REVISA"', 
+             attribute => 'store_output', value => TRUE);
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"AUTORACLE"."JOB_REVISA"', 
+             attribute => 'logging_level', value => DBMS_SCHEDULER.LOGGING_OFF);
+      
+   
+  
+    
+    DBMS_SCHEDULER.enable(
+             name => '"AUTORACLE"."JOB_REVISA"');
 END;
+
+/
+
+BEGIN
+    DBMS_SCHEDULER.CREATE_JOB (
+            job_name => '"AUTORACLE"."JOB_RECOMPENSA"',
+            job_type => 'STORED_PROCEDURE',
+            job_action => 'AUTORACLE.P_RECOMPENSA',
+            number_of_arguments => 0,
+            start_date => NULL,
+            repeat_interval => 'FREQ=YEARLY;BYDATE=1231;BYTIME=235500',
+            end_date => NULL,
+            enabled => FALSE,
+            auto_drop => FALSE,
+            comments => 'Trabajo que ejecuta el procedimiento p_recompensa');
+
+         
+     
+ 
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"AUTORACLE"."JOB_RECOMPENSA"', 
+             attribute => 'store_output', value => TRUE);
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"AUTORACLE"."JOB_RECOMPENSA"', 
+             attribute => 'logging_level', value => DBMS_SCHEDULER.LOGGING_OFF);
+      
+   
+  
+    
+    DBMS_SCHEDULER.enable(
+             name => '"AUTORACLE"."JOB_RECOMPENSA"');
+END;
+
 /
