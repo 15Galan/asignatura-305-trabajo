@@ -755,6 +755,71 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS IS
     -- PENDIENTE
 END;
 
+
+
+CREATE OR REPLACE PROCEDURE PR_CREAR_EMPLEADO(nombre EMPLEADO.NOMBRE%TYPE, ap EMPLEADO.APELLIDO1%TYPE) IS
+
+identificacion NUMBER;
+
+sentencia VARCHAR2(500);
+
+BEGIN
+    sentencia := 'CREATE USER ' || nombre || ' IDENTIFIED BY ' || nombre || ' 
+    DEFAULT TABLESPACE TS_AUTORACLE';
+    DBMS_OUTPUT.PUT_LINE(sentencia);
+    EXECUTE IMMEDIATE sentencia;
+    --Se ejecuta la sentencia, Se crea el usuario para el empleado y un ID aleatorio--
+    SELECT USER_ID INTO identificacion FROM ALL_USERS WHERE USERNAME = nombre;
+    --Este select no funciona porque cuando se ejecuta el Select, no esta el dato aun en la BD 
+    --(aunque deberia estar, porque la sentencia EXECUTE IMMEDIATE sirve para eso)--
+    INSERT INTO EMPLEADO(IDEMPLEADO, NOMBRE, APELLIDO1, FECENTRADA, DESPEDIDO, SUELDOBASE)
+        VALUES(identificacion, nombre, ap, sysdate, 0, 1500);
+
+END;
+/
+
+CREATE OR REPLACE PROCEDURE PR_MODIFICAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE, des EMPLEADO.DESPEDIDO%TYPE,
+                sueldo EMPLEADO.SUELDOBASE%TYPE, pos EMPLEADO.PUESTO%TYPE, 
+                horas EMPLEADO.HORAS%TYPE, ret EMPLEADO.RETENCIONES%TYPE ) IS         
+ des_mal EXCEPTION;
+
+BEGIN
+    IF ( ((des > 1) OR (des < 0) )) then 
+        RAISE des_mal;
+    END IF;
+
+    UPDATE EMPLEADO
+    SET DESPEDIDO = des , SUELDOBASE = sueldo ,
+    PUESTO = pos , HORAS = horas, RETENCIONES = ret
+    WHERE IDEMPLEADO = ide;
+        EXCEPTION 
+         WHEN des_mal THEN
+         DBMS_OUTPUT.PUT_LINE('Valor de "Despido" incorrecto (ingrese 0 o 1)'); 
+         WHEN OTHERS THEN
+         DBMS_OUTPUT.PUT_LINE('Parametros incorrectos.
+            Introduce (IDEmpleado, Despido, Sueldo Base, Puesto, Horas, Retenciones)');
+END;
+/
+CREATE OR REPLACE PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE) IS
+    usuario All_USERS.USER_ID%TYPE;
+BEGIN
+
+    delete FROM empleado
+    where IDEMPLEADO = ide;
+    --¿Cuando se elimina el empleado se elimina su usuario ? 
+    -- SELECT USERNAME INTO usuario 
+    -- FROM ALL_USERS WHERE USER_ID = ide; --
+    
+    --DROP USER usuario CASCADE--
+END;
+/
+
+
+
+
+
+
+
 -- [8] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
 -- informacion de fidelizacion y los datos de su vehiculo.
 
