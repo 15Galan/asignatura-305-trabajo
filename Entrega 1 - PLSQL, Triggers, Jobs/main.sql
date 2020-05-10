@@ -387,13 +387,7 @@ END;
 SELECT * FROM AUTORACLE.COMPRA_FUTURA;
 
 /* [3]
-<<<<<<< HEAD
 Agregar dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre los
-=======
-
-Añadir dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre los
-
->>>>>>> e57d0551e4e44012c4f7837188647e6bdeaaec48
 datos necesarios de las piezas utilizadas y el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
 */
 
@@ -423,7 +417,6 @@ BEGIN
 END;
 /
 
-<<<<<<< HEAD
 -- Comprobamos que funcione
 BEGIN
     p_calcula_fact;
@@ -434,11 +427,6 @@ SELECT * FROM AUTORACLE.FACTURA;
 
 /* [4]
 Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos ANNO, TRIMESTRE, IVA_TOTAL siendo trimestre
-=======
-/* [4] ----------- HECHO -----------
-
-Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO, TRIMESTRE, IVA_TOTAL siendo trimestre
->>>>>>> e57d0551e4e44012c4f7837188647e6bdeaaec48
 un numero de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
 Dar permiso de seleccion a los Administrativos.
 */
@@ -454,37 +442,11 @@ CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
     FROM AUTORACLE.factura f
     JOIN AUTORACLE.contiene c ON f.IDFACTURA = c.FACTURA_IDFACTURA
     JOIN AUTORACLE.pieza p ON p.CODREF = c.PIEZA_CODREF
-<<<<<<< HEAD
     GROUP BY TO_CHAR(f.FECEMISION, 'YYYY'), 
             TO_CHAR(f.FECEMISION, 'Q'),
             f.IVA;
 
 GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE TO R_ADMINISTRATIVO;
-=======
-    GROUP BY f.IDFACTURA, f.FECEMISION, f.IVA;
-
-SELECT * FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
-
--- Sorry soy un paquete con los "groups by"
--- https://www.oracletutorial.com/oracle-basics/oracle-group-by/
-
-CREATE OR REPLACE VIEW AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE AS
-
-    SELECT TO_CHAR(FECEMISION, 'YYYY') as "anno",
-
-           TO_CHAR(FECEMISION, 'Q') as "cuatrimestre",
-           (IVA / 100) * TOTAL_PIEZAS as "iva_total"
-    FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
-
-SELECT * FROM AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE;
-
-CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
-
-    SELECT "anno", "cuatrimestre", SUM("iva_total") as "iva_total"
-    FROM V_INTERMEDIA_IVA_TRIMESTRE
-    GROUP BY "anno", "cuatrimestre";
-
->>>>>>> e57d0551e4e44012c4f7837188647e6bdeaaec48
 
 -- Comprobamos que funcione
 SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE; -- { desde AUTORACLE (rol administrativo) }
@@ -689,6 +651,26 @@ CREATE TABLE AUTORACLE.FIDELIZACION(
     anno NUMBER(4)                  -- de 0 a 9999
 );
 
+-- Agregamos algunos datos
+INSERT ALL
+    INTO AUTORACLE.FIDELIZACION
+    VALUES ('200', 10, '2018')
+    
+    INTO AUTORACLE.FIDELIZACION
+    VALUES ('200', 5, '2017')
+    
+    INTO AUTORACLE.FIDELIZACION
+    VALUES ('200', 2, '2016')
+    
+    INTO AUTORACLE.FIDELIZACION
+    VALUES ('22', 7, '2019')
+    
+    INTO AUTORACLE.FIDELIZACION
+    VALUES ('3', 4, '2018')
+SELECT 1 FROM DUAL;
+COMMIT;
+
+SELECT * FROM AUTORACLE.FIDELIZACION; -- { desde Autoracle }
 
 -- Para asegurarnos de que hay UN descuento POR cliente y año, creamos un trigger
 
@@ -720,6 +702,13 @@ CREATE OR REPLACE
             RAISE_APPLICATION_ERROR(-20015, 'Ya existe un descuento para el cliente '||:new.CLIENTE_IDCLIENTE||' en el año '||:new.ANNO);
     END;
 /
+
+-- Comprobamos que funciona el trigger
+INSERT INTO AUTORACLE.FIDELIZACION
+    VALUES ('200', 6, '2018'); -- devuelve error
+
+INSERT INTO AUTORACLE.FIDELIZACION
+    VALUES ('200', 6, '2019');
 
 
 -- Ahora, creamos el paquete :)
