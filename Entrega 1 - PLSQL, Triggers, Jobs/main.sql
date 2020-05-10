@@ -135,6 +135,7 @@ GRANT SELECT
 */
 
 -- Devuelve un filtro para la clausula WHERE.
+
 -- https://www.techonthenet.com/oracle/functions/sys_context.php
 CREATE OR REPLACE
     FUNCTION AUTORACLE.SOLO_EMPLEADO_ACTUAL_EMPLEADO (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
@@ -151,6 +152,7 @@ CREATE OR REPLACE
 -- Devuelve un filtro para la clausula WHERE.
 -- https://www.techonthenet.com/oracle/functions/sys_context.php
 CREATE OR REPLACE
+
     FUNCTION AUTORACLE.SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
         RETURN VARCHAR2 AS
         BEGIN
@@ -161,7 +163,6 @@ CREATE OR REPLACE
             END IF;
         END;
 /
-
 
 /* Eliminar las politicas de R_MECANICO
 BEGIN
@@ -358,7 +359,9 @@ CREATE OR REPLACE
 /
 
 /* [3]
+
 Añadir dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre los
+
 datos necesarios de las piezas utilizadas y el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
 */
 
@@ -389,6 +392,7 @@ END;
 /
 
 /* [4] ----------- HECHO -----------
+
 Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO, TRIMESTRE, IVA_TOTAL siendo trimestre
 un numero de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
 Dar permiso de seleccion a los Administrativos.
@@ -414,7 +418,9 @@ SELECT * FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
 -- https://www.oracletutorial.com/oracle-basics/oracle-group-by/
 
 CREATE OR REPLACE VIEW AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE AS
+
     SELECT TO_CHAR(FECEMISION, 'YYYY') as "anno",
+
            TO_CHAR(FECEMISION, 'Q') as "cuatrimestre",
            (IVA / 100) * TOTAL_PIEZAS as "iva_total"
     FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
@@ -422,9 +428,11 @@ CREATE OR REPLACE VIEW AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE AS
 SELECT * FROM AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE;
 
 CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
+
     SELECT "anno", "cuatrimestre", SUM("iva_total") as "iva_total"
     FROM V_INTERMEDIA_IVA_TRIMESTRE
     GROUP BY "anno", "cuatrimestre";
+
 
 SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE;
 
@@ -605,6 +613,7 @@ END pkg_autoracle_analisis;
 
 
 /* [6]
+
 Añadir al modelo una tabla FIDELIZACION que permite almacenar un descuento por
 cliente y año; y crear un paquete en PL/SQL de gestion de descuentos.
     1.  El procedimiento P_Calcular_Descuento, tomara un cliente y un año y
@@ -627,7 +636,9 @@ CREATE TABLE AUTORACLE.FIDELIZACION(
     anno NUMBER(4)                  -- de 0 a 9999
 );
 
+
 -- Para asegurarnos de que hay UN descuento POR cliente y año, creamos un trigger
+
 CREATE OR REPLACE
   TRIGGER AUTORACLE.TR_ASEGURAR_FIDELIZACION
     BEFORE INSERT OR UPDATE
@@ -649,6 +660,7 @@ CREATE OR REPLACE
             END IF;
 
         END LOOP;
+
 
     EXCEPTION
         WHEN descuento_ya_existe THEN
@@ -678,6 +690,7 @@ CREATE OR REPLACE
 
             BEGIN
                 -- Todas las facturas del cliente (en ese año)
+
                 SELECT COUNT(*) INTO facturas
                     FROM AUTORACLE.FACTURA
                         WHERE CLIENTE_IDCLIENTE = cliente
@@ -685,6 +698,7 @@ CREATE OR REPLACE
 
 
                 -- Todas las citas con mas de 5 dias de espera (en ese año)
+
                 SELECT COUNT(*) INTO citas5dias
                     FROM AUTORACLE.CITA
                         WHERE CLIENTE_IDCLIENTE = cliente
@@ -695,7 +709,9 @@ CREATE OR REPLACE
                 SELECT AVG(FECREALIZACION - FECAPERTURA) INTO media_horas
                     FROM SERVICIO;
 
+
                 -- Todos los servicios con mas de la media de dias de espera (en ese año)
+
                 SELECT COUNT(*) INTO servicios_largos
                     FROM AUTORACLE.SERVICIO s
                         JOIN AUTORACLE.VEHICULO v ON s.VEHICULO_NUMBASTIDOR = v.NUMBASTIDOR
@@ -703,7 +719,9 @@ CREATE OR REPLACE
                             AND TO_CHAR(s.FECAPERTURA, 'YYYY') = TO_CHAR(anno)
                             AND (FECREALIZACION - FECAPERTURA) > media_horas;
 
+
                 -- Guardamos el descuento para el año siguiente (maximo 10%)
+
                 v_descuento := LEAST(facturas + citas5dias + servicios_largos, 10);
 
                 INSERT INTO AUTORACLE.FIDELIZACION
@@ -814,6 +832,7 @@ BEGIN
 END;
 /
 
+
 -- [8] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
 -- informacion de fidelizacion y los datos de su vehiculo.
 
@@ -827,6 +846,19 @@ END;
 
 -- [9] Crear un JOB que ejecute el procedimiento P_REVISA todos los dias a las 21:00. Crear otro JOB que, anualmente
 -- (el 31 de diciembre a las 23.55), llame a P_Recompensa.
+
+--BEGIN
+--    DBMS_SCHEDULER.CREATE_JOB (
+--        job_name => 'Llamada_A_Recompensas',
+--        job_type => 'PLSQL_BLOCK',
+--        job_action => 'BEGIN PROCEDURE P_Recompensa END;',
+--        start_date => TO_DATE('2020-12-31 23:55:00' , 'YYYY-MM-DD HH24:MI:SS'),
+--        repeat_interval => 'FREQ = YEARLY; INTERVAL=1',
+--        enabled => TRUE,
+--        comments => 'Llama al procedimiento P_Recompensa anualmente el 31 de Diciembre a las 23.55');
+--
+--END;
+--/
 
 BEGIN
     DBMS_SCHEDULER.CREATE_JOB (
@@ -858,6 +890,7 @@ BEGIN
              name => '"AUTORACLE"."JOB_REVISA"');
 END;
 /
+
 BEGIN
     DBMS_SCHEDULER.CREATE_JOB (
             job_name => '"AUTORACLE"."JOB_RECOMPENSA"',
