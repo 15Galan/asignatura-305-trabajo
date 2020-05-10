@@ -6,6 +6,17 @@
 -- Activar la opcion de mostrar mensajes por pantalla (1 vez / sesion)
 SET SERVEROUTPUT ON;
 
+/* Que ejercicios funcionan 100%
+  + Ej 1
+  + Ej 2
+  + Ej 4
+
+*/
+
+/* Que falta
+ + Ej 3: revisar la respuesta de Onieva/Enrique en el foro - no esta claro el ejercicio
+ + Ej
+*/
 
 /* [1] (desde SYSDBA)
 Modificar el modelo (si es necesario) para almacenar el usuario de Oracle que
@@ -35,7 +46,7 @@ CREATE ROLE r_cliente;
 -- { permisos para R_ADMINISTRATIVO }
 
 GRANT dba
-    TO r_administrativo;
+    TO R_ADMINISTRATIVO;
 
 GRANT R_ADMINISTRATIVO
     TO AUTORACLE;
@@ -304,9 +315,14 @@ BEGIN
 END;
 /
 
-
+-- Para comprobar que todas las politicas funcionan
+SELECT * FROM AUTORACLE.CLIENTE; -- { desde SYSTEM }
+SELECT * FROM AUTORACLE.CLIENTE; -- { desde USUARIO1, cuyo ID se asocia a un cliente previamente }
+SELECT * FROM AUTORACLE.EMPLEADO; -- { desde AUTORACLE, que es ABD }
+SELECT * FROM AUTORACLE.EMPLEADO; -- { desde USUARIO2, cuyo ID se asocia a un empleado previamente }
 
 /* [2]
+
 Crea una tabla denominada COMPRA_FUTURA que incluya el NIF, telefono, nombre e email del proveedor, referencia de pieza y
 cantidad. Necesitamos un procedimiento P_REVISA que cuando se ejecute compruebe si las piezas han caducado. De esta forma,
 insertara en COMPRA_FUTURA aquellas piezas caducadas junto a los datos necesarios para realizar en el futuro la compra.
@@ -321,44 +337,56 @@ CREATE TABLE autoracle.COMPRA_FUTURA (
     CANTIDAD NUMBER(*, 0));
 
 CREATE OR REPLACE
-    PROCEDURE autoracle.p_revisa AS
-        BEGIN
-            DECLARE
-                CURSOR datos IS
-                    SELECT  Pr.nif, Pr.telefono, Pr.nombre, Pr.email,
-                            Pi.cantidad, Pi.codref, Pi.feccaducidad
-                        FROM autoracle.pieza Pi
-                            JOIN autoracle.proveedor Pr ON proveedor_nif = nif;
+    PROCEDURE autoracle.p_revisa IS
+        CURSOR datos IS
+            SELECT  Pr.nif, Pr.telefono, Pr.nombre, Pr.email,
+                    Pi.cantidad, Pi.codref, Pi.feccaducidad
+                FROM autoracle.pieza Pi
+                    JOIN autoracle.proveedor Pr ON proveedor_nif = nif;
 
-                repetida NUMBER;
+        repetida NUMBER;
 
-            BEGIN
-                FOR fila IN datos LOOP
-                    IF fila.feccaducidad < (sysdate-1) THEN
-                        INSERT INTO autoracle.compra_futura
-                                VALUES (
-                                fila.nif,
-                                fila.telefono,
-                                fila.nombre,
-                                fila.email,
-                                fila.codref,
-                                fila.cantidad);
+    BEGIN
+        FOR fila IN datos LOOP
+        
+            IF fila.feccaducidad < (sysdate-1) THEN
+                INSERT INTO autoracle.compra_futura
+                        VALUES (
+                        fila.nif,
+                        fila.telefono,
+                        fila.nombre,
+                        fila.email,
+                        fila.codref,
+                        fila.cantidad);
 
-                        COMMIT;
-                    END IF;
+                COMMIT;
+                
+            END IF;
 
-                END LOOP;
+        END LOOP;
 
-                EXCEPTION
-                    WHEN DUP_VAL_ON_INDEX THEN
-                        DBMS_OUTPUT.put_line('Se ignoraron algunas piezas ya incluidas.');
-            END;
-
-        END p_revisa;
+        EXCEPTION
+        
+            WHEN DUP_VAL_ON_INDEX THEN
+                DBMS_OUTPUT.put_line('Se ignoraron algunas piezas ya incluidas.');
+    
+    END p_revisa;
 /
 
+-- Comprobamos que funciona
+UPDATE AUTORACLE.PIEZA
+    SET FECCADUCIDAD = SYSDATE - 1
+    WHERE CODREF = '1234';
+
+BEGIN
+    p_revisa;
+END;
+/
+
+SELECT * FROM AUTORACLE.COMPRA_FUTURA;
+
 /* [3]
-AÃ±adir dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre los
+Agregar dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre los
 datos necesarios de las piezas utilizadas y el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
 */
 
@@ -370,7 +398,7 @@ ALTER TABLE AUTORACLE.FACTURA
 UPDATE AUTORACLE.FACTURA
     SET iva_calculado = 0, total = 0;
 
-CREATE OR REPLACE AUTORACLE.P_CALCULA_FACT AS
+CREATE OR REPLACE PROCEDURE AUTORACLE.P_CALCULA_FACT AS
     iva_mult NUMBER;
     CURSOR tabla IS
         SELECT f.IDFACTURA, f.IVA, p.CODREF, p.PRECIOUNIDADVENTA, p.PRECIOUNIDADCOMPRA
@@ -379,17 +407,25 @@ CREATE OR REPLACE AUTORACLE.P_CALCULA_FACT AS
         JOIN AUTORACLE.PIEZA p ON c.PIEZA_CODREF = p.CODREF;
 BEGIN
     FOR fila IN tabla LOOP
-        iva_mult = 1 + (fila.IVA / 100); -- el IVA es un factor de crecimiento
+        iva_mult := 1 + (fila.IVA / 100); -- el IVA es un factor de crecimiento
         UPDATE AUTORACLE.FACTURA
             SET IVA_CALCULADO = IVA_CALCULADO + iva_mult * fila.PRECIOUNIDADVENTA,
-                TOTAL = TOTAL + (iva_mult * fila.PRECIOUNIDADVENTA) - fila.PRECIOUNIDADCOMPRA
+                TOTAL = TOTAL + ((iva_mult * fila.PRECIOUNIDADVENTA) - fila.PRECIOUNIDADCOMPRA)
             WHERE IDFACTURA = fila.IDFACTURA;
     END LOOP;
 END;
 /
 
-/* [4] ----------- HECHO -----------
-Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÃO, TRIMESTRE, IVA_TOTAL siendo trimestre
+-- Comprobamos que funcione
+BEGIN
+    p_calcula_fact;
+END;
+/
+
+SELECT * FROM AUTORACLE.FACTURA;
+
+/* [4]
+Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos ANNO, TRIMESTRE, IVA_TOTAL siendo trimestre
 un numero de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
 Dar permiso de seleccion a los Administrativos.
 */
@@ -398,37 +434,23 @@ Dar permiso de seleccion a los Administrativos.
 -- [el coste total de horas trabajadas], y la fecha de emision de la factura
 -- Dada la arquitectura de la BD proporcionada, no hay manera de agregar las horas trabajadas por empleado.
 
-CREATE OR REPLACE VIEW AUTORACLE.V_COSTE_PIEZAS_TOTAL AS
-    SELECT f.IDFACTURA,
-           f.FECEMISION,
-           f.IVA,
-           SUM(p.PRECIOUNIDADVENTA) AS TOTAL_PIEZAS
+CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
+    SELECT TO_CHAR(f.FECEMISION, 'YYYY') AS "ANNO",
+        TO_CHAR(f.FECEMISION, 'Q') AS "TRIMESTRE",
+        (f.IVA / 100) * SUM(p.PRECIOUNIDADVENTA) AS IVA_DEVANGADO
     FROM AUTORACLE.factura f
     JOIN AUTORACLE.contiene c ON f.IDFACTURA = c.FACTURA_IDFACTURA
     JOIN AUTORACLE.pieza p ON p.CODREF = c.PIEZA_CODREF
-    GROUP BY f.IDFACTURA, f.FECEMISION, f.IVA;
-
-SELECT * FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
-
--- Sorry soy un paquete con los "groups by"
--- https://www.oracletutorial.com/oracle-basics/oracle-group-by/
-
-CREATE OR REPLACE VIEW AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE AS
-    SELECT TO_CHAR(FECEMISION, 'YYYY') as "aÃ±o",
-           TO_CHAR(FECEMISION, 'Q') as "cuatrimestre",
-           (IVA / 100) * TOTAL_PIEZAS as "iva_total"
-    FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
-
-SELECT * FROM AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE;
-
-CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
-    SELECT "aÃ±o", "cuatrimestre", SUM("iva_total") as "iva_total"
-    FROM V_INTERMEDIA_IVA_TRIMESTRE
-    GROUP BY "aÃ±o", "cuatrimestre";
-
-SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE;
+    GROUP BY TO_CHAR(f.FECEMISION, 'YYYY'), 
+            TO_CHAR(f.FECEMISION, 'Q'),
+            f.IVA;
 
 GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE TO R_ADMINISTRATIVO;
+
+-- Comprobamos que funcione
+SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE; -- { desde AUTORACLE (rol administrativo) }
+SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE; -- { desde USUARIO1 (rol cliente) }
+
 
 /* [5]
 Crear un paquete en PL/SQL de analisis de datos que contenga:
