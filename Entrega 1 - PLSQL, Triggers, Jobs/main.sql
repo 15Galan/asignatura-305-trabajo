@@ -495,11 +495,8 @@ END;
 BEGIN
     DBMS_SCHEDULER.CREATE_JOB (
             job_name => '"AUTORACLE"."JOB_REVISA"',
-            job_type => 'PLSQL_BLOCK',
-            job_action => 'begin
-    exec p_revisa;
-end;
-/',
+            job_type => 'STORED_PROCEDURE',
+            job_action => 'AUTORACLE.P_REVISA',
             number_of_arguments => 0,
             start_date => NULL,
             repeat_interval => 'FREQ=DAILY;BYTIME=210000',
@@ -524,15 +521,14 @@ end;
     DBMS_SCHEDULER.enable(
              name => '"AUTORACLE"."JOB_REVISA"');
 END;
+
 /
 
 BEGIN
     DBMS_SCHEDULER.CREATE_JOB (
             job_name => '"AUTORACLE"."JOB_RECOMPENSA"',
-            job_type => 'PLSQL_BLOCK',
-            job_action => 'begin
-    exec p_recompensa;
-end;',
+            job_type => 'STORED_PROCEDURE',
+            job_action => 'AUTORACLE.P_RECOMPENSA',
             number_of_arguments => 0,
             start_date => NULL,
             repeat_interval => 'FREQ=YEARLY;BYDATE=1231;BYTIME=235500',
@@ -557,4 +553,5 @@ end;',
     DBMS_SCHEDULER.enable(
              name => '"AUTORACLE"."JOB_RECOMPENSA"');
 END;
+
 /
