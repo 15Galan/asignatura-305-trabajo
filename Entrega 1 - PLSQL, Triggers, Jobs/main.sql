@@ -146,6 +146,7 @@ GRANT SELECT
 */
 
 -- Devuelve un filtro para la clausula WHERE.
+
 -- https://www.techonthenet.com/oracle/functions/sys_context.php
 CREATE OR REPLACE
     FUNCTION AUTORACLE.SOLO_EMPLEADO_ACTUAL_EMPLEADO (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
@@ -162,6 +163,7 @@ CREATE OR REPLACE
 -- Devuelve un filtro para la clausula WHERE.
 -- https://www.techonthenet.com/oracle/functions/sys_context.php
 CREATE OR REPLACE
+
     FUNCTION AUTORACLE.SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
         RETURN VARCHAR2 AS
         BEGIN
@@ -172,7 +174,6 @@ CREATE OR REPLACE
             END IF;
         END;
 /
-
 
 /* Eliminar las politicas de R_MECANICO
 BEGIN
@@ -386,7 +387,13 @@ END;
 SELECT * FROM AUTORACLE.COMPRA_FUTURA;
 
 /* [3]
+<<<<<<< HEAD
 Agregar dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre los
+=======
+
+Añadir dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre los
+
+>>>>>>> e57d0551e4e44012c4f7837188647e6bdeaaec48
 datos necesarios de las piezas utilizadas y el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
 */
 
@@ -416,6 +423,7 @@ BEGIN
 END;
 /
 
+<<<<<<< HEAD
 -- Comprobamos que funcione
 BEGIN
     p_calcula_fact;
@@ -426,6 +434,11 @@ SELECT * FROM AUTORACLE.FACTURA;
 
 /* [4]
 Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos ANNO, TRIMESTRE, IVA_TOTAL siendo trimestre
+=======
+/* [4] ----------- HECHO -----------
+
+Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO, TRIMESTRE, IVA_TOTAL siendo trimestre
+>>>>>>> e57d0551e4e44012c4f7837188647e6bdeaaec48
 un numero de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
 Dar permiso de seleccion a los Administrativos.
 */
@@ -441,11 +454,37 @@ CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
     FROM AUTORACLE.factura f
     JOIN AUTORACLE.contiene c ON f.IDFACTURA = c.FACTURA_IDFACTURA
     JOIN AUTORACLE.pieza p ON p.CODREF = c.PIEZA_CODREF
+<<<<<<< HEAD
     GROUP BY TO_CHAR(f.FECEMISION, 'YYYY'), 
             TO_CHAR(f.FECEMISION, 'Q'),
             f.IVA;
 
 GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE TO R_ADMINISTRATIVO;
+=======
+    GROUP BY f.IDFACTURA, f.FECEMISION, f.IVA;
+
+SELECT * FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
+
+-- Sorry soy un paquete con los "groups by"
+-- https://www.oracletutorial.com/oracle-basics/oracle-group-by/
+
+CREATE OR REPLACE VIEW AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE AS
+
+    SELECT TO_CHAR(FECEMISION, 'YYYY') as "anno",
+
+           TO_CHAR(FECEMISION, 'Q') as "cuatrimestre",
+           (IVA / 100) * TOTAL_PIEZAS as "iva_total"
+    FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
+
+SELECT * FROM AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE;
+
+CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
+
+    SELECT "anno", "cuatrimestre", SUM("iva_total") as "iva_total"
+    FROM V_INTERMEDIA_IVA_TRIMESTRE
+    GROUP BY "anno", "cuatrimestre";
+
+>>>>>>> e57d0551e4e44012c4f7837188647e6bdeaaec48
 
 -- Comprobamos que funcione
 SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE; -- { desde AUTORACLE (rol administrativo) }
@@ -455,7 +494,7 @@ SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE; -- { desde USUARIO1 (rol cliente) }
 /* [5]
 Crear un paquete en PL/SQL de analisis de datos que contenga:
     1.  La funcion F_Calcular_Piezas: devolvera la media, minimo y maximo numero
-        de unidades compradas (en cada lote) de una determinada pieza en un aÃ±o
+        de unidades compradas (en cada lote) de una determinada pieza en un año
         concreto.
     2.  La funcion F_Calcular_Tiempos: devolvera la media de dias en las que se
         termina un servicio (Fecha de realizacion - Fecha de entrada en taller)
@@ -627,10 +666,11 @@ END pkg_autoracle_analisis;
 
 
 /* [6]
-AÃ±adir al modelo una tabla FIDELIZACION que permite almacenar un descuento por
-cliente y aÃ±o; y crear un paquete en PL/SQL de gestion de descuentos.
-    1.  El procedimiento P_Calcular_Descuento, tomara un cliente y un aÃ±o y
-        calculara el descuento del que podra disfrutar el aÃ±o siguiente. Para
+
+Añadir al modelo una tabla FIDELIZACION que permite almacenar un descuento por
+cliente y año; y crear un paquete en PL/SQL de gestion de descuentos.
+    1.  El procedimiento P_Calcular_Descuento, tomara un cliente y un año y
+        calculara el descuento del que podra disfrutar el año siguiente. Para
         ello, hasta un maximo del 10%, ira incrementando el descuento en un 1%
         por cada una de las siguientes acciones:
             * Por cada servicio pagado por el cliente.
@@ -638,9 +678,9 @@ cliente y aÃ±o; y crear un paquete en PL/SQL de gestion de descuentos.
               dias desde que solicito la cita hasta que se concerto.
             * Por cada servicio proporcionado en el que tuvo que esperar mas de
               la media de todos los servicios.
-    2.  El procedimiento P_Aplicar_descuento tomara el aÃ±o y el cliente. Si en
-        la tabla FIDELIZACION hay un descuento calculado a aplicar ese aÃ±o,
-        lo harÃ¡ para todas las facturas que encuentre (en ese aÃ±o).
+    2.  El procedimiento P_Aplicar_descuento tomara el año y el cliente. Si en
+        la tabla FIDELIZACION hay un descuento calculado a aplicar ese año,
+        lo hará para todas las facturas que encuentre (en ese año).
 */
 
 CREATE TABLE AUTORACLE.FIDELIZACION(
@@ -649,7 +689,9 @@ CREATE TABLE AUTORACLE.FIDELIZACION(
     anno NUMBER(4)                  -- de 0 a 9999
 );
 
--- Para asegurarnos de que hay UN descuento POR cliente y aÃ±o, creamos un trigger
+
+-- Para asegurarnos de que hay UN descuento POR cliente y año, creamos un trigger
+
 CREATE OR REPLACE
   TRIGGER AUTORACLE.TR_ASEGURAR_FIDELIZACION
     BEFORE INSERT OR UPDATE
@@ -672,9 +714,10 @@ CREATE OR REPLACE
 
         END LOOP;
 
+
     EXCEPTION
         WHEN descuento_ya_existe THEN
-            RAISE_APPLICATION_ERROR(-20015, 'Ya existe un descuento para el cliente '||:new.CLIENTE_IDCLIENTE||' en el aÃ±o '||:new.ANNO);
+            RAISE_APPLICATION_ERROR(-20015, 'Ya existe un descuento para el cliente '||:new.CLIENTE_IDCLIENTE||' en el año '||:new.ANNO);
     END;
 /
 
@@ -699,14 +742,16 @@ CREATE OR REPLACE
             media_horas NUMBER;         -- Horas de espera media de los servicios
 
             BEGIN
-                -- Todas las facturas del cliente (en ese aÃ±o)
+                -- Todas las facturas del cliente (en ese año)
+
                 SELECT COUNT(*) INTO facturas
                     FROM AUTORACLE.FACTURA
                         WHERE CLIENTE_IDCLIENTE = cliente
                             AND TO_CHAR(FECEMISION, 'YYYY') = TO_CHAR(anno);
 
 
-                -- Todas las citas con mas de 5 dias de espera (en ese aÃ±o)
+                -- Todas las citas con mas de 5 dias de espera (en ese año)
+
                 SELECT COUNT(*) INTO citas5dias
                     FROM AUTORACLE.CITA
                         WHERE CLIENTE_IDCLIENTE = cliente
@@ -717,7 +762,9 @@ CREATE OR REPLACE
                 SELECT AVG(FECREALIZACION - FECAPERTURA) INTO media_horas
                     FROM SERVICIO;
 
-                -- Todos los servicios con mas de la media de dias de espera (en ese aÃ±o)
+
+                -- Todos los servicios con mas de la media de dias de espera (en ese año)
+
                 SELECT COUNT(*) INTO servicios_largos
                     FROM AUTORACLE.SERVICIO s
                         JOIN AUTORACLE.VEHICULO v ON s.VEHICULO_NUMBASTIDOR = v.NUMBASTIDOR
@@ -725,7 +772,9 @@ CREATE OR REPLACE
                             AND TO_CHAR(s.FECAPERTURA, 'YYYY') = TO_CHAR(anno)
                             AND (FECREALIZACION - FECAPERTURA) > media_horas;
 
-                -- Guardamos el descuento para el aÃ±o siguiente (maximo 10%)
+
+                -- Guardamos el descuento para el año siguiente (maximo 10%)
+
                 v_descuento := LEAST(facturas + citas5dias + servicios_largos, 10);
 
                 INSERT INTO AUTORACLE.FIDELIZACION
@@ -749,7 +798,7 @@ CREATE OR REPLACE
 
             EXCEPTION
                 WHEN no_data_found THEN     -- Si no existe el descuento...
-                    RAISE_APPLICATION_ERROR(-20016, 'P_APLICAR_DESCUENTO Error: No hay descuento para el cliente '||cliente||' para el aÃ±o '||anno);
+                    RAISE_APPLICATION_ERROR(-20016, 'P_APLICAR_DESCUENTO Error: No hay descuento para el cliente '||cliente||' para el año '||anno);
 
             END;
 
@@ -837,11 +886,6 @@ END;
 /
 
 
-
-
-
-
-
 -- [8] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
 -- informacion de fidelizacion y los datos de su vehiculo.
 
@@ -898,7 +942,6 @@ BEGIN
     DBMS_SCHEDULER.enable(
              name => '"AUTORACLE"."JOB_REVISA"');
 END;
-
 /
 
 BEGIN
@@ -930,5 +973,5 @@ BEGIN
     DBMS_SCHEDULER.enable(
              name => '"AUTORACLE"."JOB_RECOMPENSA"');
 END;
-
 /
+
