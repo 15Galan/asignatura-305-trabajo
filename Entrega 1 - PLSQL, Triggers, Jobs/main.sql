@@ -479,15 +479,82 @@ END;
 -- [9] Crear un JOB que ejecute el procedimiento P_REVISA todos los dias a las 21:00. Crear otro JOB que, anualmente
 -- (el 31 de diciembre a las 23.55), llame a P_Recompensa.
 
+--BEGIN
+--    DBMS_SCHEDULER.CREATE_JOB (
+--        job_name => 'Llamada_A_Recompensas',
+--        job_type => 'PLSQL_BLOCK',
+--        job_action => 'BEGIN PROCEDURE P_Recompensa END;',
+--        start_date => TO_DATE('2020-12-31 23:55:00' , 'YYYY-MM-DD HH24:MI:SS'),
+--        repeat_interval => 'FREQ = YEARLY; INTERVAL=1',
+--        enabled => TRUE,
+--        comments => 'Llama al procedimiento P_Recompensa anualmente el 31 de Diciembre a las 23.55');
+--
+--END;
+--/
+
 BEGIN
     DBMS_SCHEDULER.CREATE_JOB (
-        job_name => 'Llamada_A_Recompensas',
-        job_type => 'PLSQL_BLOCK',
-        job_action => 'BEGIN PROCEDURE P_Recompensa END;',
-        start_date => TO_DATE('2020-12-31 23:55:00' , 'YYYY-MM-DD HH24:MI:SS'),
-        repeat_interval => 'FREQ = YEARLY; INTERVAL=1',
-        enabled => TRUE,
-        comments => 'Llama al procedimiento P_Recompensa anualmente el 31 de Diciembre a las 23.55');
+            job_name => '"AUTORACLE"."JOB_REVISA"',
+            job_type => 'PLSQL_BLOCK',
+            job_action => 'begin
+    exec p_revisa;
+end;
+/',
+            number_of_arguments => 0,
+            start_date => NULL,
+            repeat_interval => 'FREQ=DAILY;BYTIME=210000',
+            end_date => NULL,
+            enabled => FALSE,
+            auto_drop => FALSE,
+            comments => 'Ejecuta el procedimiento p_revisa');
 
+         
+     
+ 
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"AUTORACLE"."JOB_REVISA"', 
+             attribute => 'store_output', value => TRUE);
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"AUTORACLE"."JOB_REVISA"', 
+             attribute => 'logging_level', value => DBMS_SCHEDULER.LOGGING_OFF);
+      
+   
+  
+    
+    DBMS_SCHEDULER.enable(
+             name => '"AUTORACLE"."JOB_REVISA"');
+END;
+/
+
+BEGIN
+    DBMS_SCHEDULER.CREATE_JOB (
+            job_name => '"AUTORACLE"."JOB_RECOMPENSA"',
+            job_type => 'PLSQL_BLOCK',
+            job_action => 'begin
+    exec p_recompensa;
+end;',
+            number_of_arguments => 0,
+            start_date => NULL,
+            repeat_interval => 'FREQ=YEARLY;BYDATE=1231;BYTIME=235500',
+            end_date => NULL,
+            enabled => FALSE,
+            auto_drop => FALSE,
+            comments => 'Trabajo que ejecuta el procedimiento p_recompensa');
+
+         
+     
+ 
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"AUTORACLE"."JOB_RECOMPENSA"', 
+             attribute => 'store_output', value => TRUE);
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"AUTORACLE"."JOB_RECOMPENSA"', 
+             attribute => 'logging_level', value => DBMS_SCHEDULER.LOGGING_OFF);
+      
+   
+  
+    
+    DBMS_SCHEDULER.enable(
+             name => '"AUTORACLE"."JOB_RECOMPENSA"');
 END;
 /
