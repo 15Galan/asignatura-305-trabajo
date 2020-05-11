@@ -11,14 +11,7 @@ SET SERVEROUTPUT ON;
   + Ej 2
   + Ej 4
 
-*/
-
-/* Que falta
- + Ej 3: revisar la respuesta de Onieva/Enrique en el foro - no esta claro el ejercicio
- + Ej
-*/
-
-/* [1] (desde SYSDBA)
+/* [1]
 Modificar el modelo (si es necesario) para almacenar el usuario de Oracle que
 cada empleado o cliente pueda utilizar para conectarse a la base de datos.
 Ademas, habra que crear roles dependiendo del tipo de usuario:
@@ -317,16 +310,19 @@ END;
 /
 
 -- Para comprobar que todas las politicas funcionan
-SELECT * FROM AUTORACLE.CLIENTE; -- { desde SYSTEM }
-SELECT * FROM AUTORACLE.CLIENTE; -- { desde USUARIO1, cuyo ID se asocia a un cliente previamente }
+SELECT * FROM AUTORACLE.CLIENTE;  -- { desde SYSTEM }
+SELECT * FROM AUTORACLE.CLIENTE;  -- { desde USUARIO1, cuyo ID se asocia a un cliente previamente }
 SELECT * FROM AUTORACLE.EMPLEADO; -- { desde AUTORACLE, que es ABD }
 SELECT * FROM AUTORACLE.EMPLEADO; -- { desde USUARIO2, cuyo ID se asocia a un empleado previamente }
 
-/* [2]
 
-Crea una tabla denominada COMPRA_FUTURA que incluya el NIF, telefono, nombre e email del proveedor, referencia de pieza y
-cantidad. Necesitamos un procedimiento P_REVISA que cuando se ejecute compruebe si las piezas han caducado. De esta forma,
-insertara en COMPRA_FUTURA aquellas piezas caducadas junto a los datos necesarios para realizar en el futuro la compra.
+
+/* [2]
+Crea una tabla denominada COMPRA_FUTURA que incluya el NIF, telefono, nombre e
+email del proveedor, referencia de pieza y cantidad. Necesitamos un procedimiento
+P_REVISA que cuando se ejecute compruebe si las piezas han caducado.
+De esta forma, insertara en COMPRA_FUTURA aquellas piezas caducadas junto a los
+datos necesarios para realizar en el futuro la compra.
 */
 
 CREATE TABLE autoracle.COMPRA_FUTURA (
@@ -349,7 +345,7 @@ CREATE OR REPLACE
 
     BEGIN
         FOR fila IN datos LOOP
-        
+
             IF fila.feccaducidad < (sysdate-1) THEN
                 INSERT INTO autoracle.compra_futura
                         VALUES (
@@ -361,16 +357,16 @@ CREATE OR REPLACE
                         fila.cantidad);
 
                 COMMIT;
-                
+
             END IF;
 
         END LOOP;
 
         EXCEPTION
-        
+
             WHEN DUP_VAL_ON_INDEX THEN
                 DBMS_OUTPUT.put_line('Se ignoraron algunas piezas ya incluidas.');
-    
+
     END p_revisa;
 /
 
@@ -384,11 +380,13 @@ BEGIN
 END;
 /
 
-SELECT * FROM AUTORACLE.COMPRA_FUTURA;
+
 
 /* [3]
-Agregar dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre los
-datos necesarios de las piezas utilizadas y el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
+Añadir dos campos a la tabla factura: iva calculado y total
+Implementar un procedimiento P_CALCULA_FACT que recorre los datos necesarios de
+las piezas utilizadas y el porcentaje de iva y calcula la cantidad en euros para
+estos dos campos.
 */
 
 ALTER TABLE AUTORACLE.FACTURA
@@ -417,17 +415,12 @@ BEGIN
 END;
 /
 
--- Comprobamos que funcione
-BEGIN
-    p_calcula_fact;
-END;
-/
 
-SELECT * FROM AUTORACLE.FACTURA;
 
 /* [4]
-Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos ANNO, TRIMESTRE, IVA_TOTAL siendo trimestre
-un numero de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
+Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO,
+TRIMESTRE, IVA_TOTAL siendo trimestre un numero de 1 a 4. El IVA_TOTAL es el IVA
+devengado (suma del IVA de las facturas de ese trimestre).
 Dar permiso de seleccion a los Administrativos.
 */
 
@@ -442,7 +435,7 @@ CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
     FROM AUTORACLE.factura f
     JOIN AUTORACLE.contiene c ON f.IDFACTURA = c.FACTURA_IDFACTURA
     JOIN AUTORACLE.pieza p ON p.CODREF = c.PIEZA_CODREF
-    GROUP BY TO_CHAR(f.FECEMISION, 'YYYY'), 
+    GROUP BY TO_CHAR(f.FECEMISION, 'YYYY'),
             TO_CHAR(f.FECEMISION, 'Q'),
             f.IVA;
 
@@ -451,6 +444,19 @@ GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE TO R_ADMINISTRATIVO;
 -- Comprobamos que funcione
 SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE; -- { desde AUTORACLE (rol administrativo) }
 SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE; -- { desde USUARIO1 (rol cliente) }
+
+
+SELECT * FROM AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE;
+
+CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
+    SELECT "año", "cuatrimestre", SUM("iva_total") as "iva_total"
+    FROM V_INTERMEDIA_IVA_TRIMESTRE
+    GROUP BY "año", "cuatrimestre";
+
+SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE;
+
+GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE TO R_ADMINISTRATIVO;
+
 
 
 /* [5]
@@ -628,7 +634,6 @@ END pkg_autoracle_analisis;
 
 
 /* [6]
-
 Añadir al modelo una tabla FIDELIZACION que permite almacenar un descuento por
 cliente y año; y crear un paquete en PL/SQL de gestion de descuentos.
     1.  El procedimiento P_Calcular_Descuento, tomara un cliente y un año y
@@ -655,16 +660,16 @@ CREATE TABLE AUTORACLE.FIDELIZACION(
 INSERT ALL
     INTO AUTORACLE.FIDELIZACION
     VALUES ('200', 10, '2018')
-    
+
     INTO AUTORACLE.FIDELIZACION
     VALUES ('200', 5, '2017')
-    
+
     INTO AUTORACLE.FIDELIZACION
     VALUES ('200', 2, '2016')
-    
+
     INTO AUTORACLE.FIDELIZACION
     VALUES ('22', 7, '2019')
-    
+
     INTO AUTORACLE.FIDELIZACION
     VALUES ('3', 4, '2018')
 SELECT 1 FROM DUAL;
@@ -797,28 +802,30 @@ END pkg_gestion_descuentos;
 
 
 /* [7]
-Crear un paquete en PL/SQL de gestion de empleados que incluya las operaciones para crear, borrar y modificar los datos de un
-empleado. Hay que tener en cuenta que algunos empleados tienen un usuario y, por tanto, al insertar o modificar un empleado,
-si su usuario no es nulo, habra que crear su usuario.
-Ademas, el paquete ofrecera procedimientos para bloquear/desbloquear cuentas de usuarios de modo individual.
-Tambien se debe disponer de una opcion para bloquear y desbloquear todas las cuentas de los empleados.
+Crear un paquete en PL/SQL de gestion de empleados que incluya las operaciones
+para crear, borrar y modificar los datos de un empleado. Hay que tener en cuenta
+que algunos empleados tienen un usuario y, por tanto, al insertar o modificar un
+empleado, si su usuario no es nulo, habra que crear su usuario.
+Ademas, el paquete ofrecera procedimientos para bloquear/desbloquear cuentas de
+usuarios de modo individual. Tambien se debe disponer de una opcion para bloquear
+y desbloquear todas las cuentas de los empleados.
 */
 
 CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
     PROCEDURE PR_CREAR_EMPLEADO(nombre EMPLEADO.NOMBRE%TYPE, ap EMPLEADO.APELLIDO1%TYPE);
      PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE);
     PROCEDURE PR_MODIFICAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE, des EMPLEADO.DESPEDIDO%TYPE,
-                sueldo EMPLEADO.SUELDOBASE%TYPE, pos EMPLEADO.PUESTO%TYPE, 
+                sueldo EMPLEADO.SUELDOBASE%TYPE, pos EMPLEADO.PUESTO%TYPE,
                 horas EMPLEADO.HORAS%TYPE, ret EMPLEADO.RETENCIONES%TYPE );
    PROCEDURE PR_BLOQUEAR_USUARIO(id ALL_USERS.USER_ID%TYPE );
    PROCEDURE PR_DESBLOQUEAR_USUARIO(id ALL_USERS.USER_ID%TYPE );
    PROCEDURE PR_BLOQUEAR_TODOS_EMPLEADOS;
    PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS;
-    
+
 END;
 
 CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
-    
+
     PROCEDURE PR_CREAR_EMPLEADO(nombre EMPLEADO.NOMBRE%TYPE, ap EMPLEADO.APELLIDO1%TYPE) IS
 
 identificacion NUMBER;
@@ -826,41 +833,41 @@ identificacion NUMBER;
 sentencia VARCHAR2(500);
 
 BEGIN
-    sentencia := 'CREATE USER ' || nombre || ' IDENTIFIED BY ' || nombre || ' 
+    sentencia := 'CREATE USER ' || nombre || ' IDENTIFIED BY ' || nombre || '
     DEFAULT TABLESPACE TS_AUTORACLE';
     DBMS_OUTPUT.PUT_LINE(sentencia);
     EXECUTE IMMEDIATE sentencia;
     --Se ejecuta la sentencia, Se crea el usuario para el empleado y un ID aleatorio--
     SELECT USER_ID INTO identificacion FROM ALL_USERS WHERE USERNAME = nombre;
-    --Este select no funciona porque cuando se ejecuta el Select, no esta el dato aun en la BD 
+    --Este select no funciona porque cuando se ejecuta el Select, no esta el dato aun en la BD
     --(aunque deberia estar, porque la sentencia EXECUTE IMMEDIATE sirve para eso)--
     INSERT INTO EMPLEADO(IDEMPLEADO, NOMBRE, APELLIDO1, FECENTRADA, DESPEDIDO, SUELDOBASE)
         VALUES(identificacion, nombre, ap, sysdate, 0, 1500);
 
 END;
-    
-    
+
+
     PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE) IS
     usuario All_USERS.USER_ID%TYPE;
 BEGIN
 
     delete FROM empleado
     where IDEMPLEADO = ide;
-    --�Cuando se elimina el empleado se elimina su usuario ? 
-    -- SELECT USERNAME INTO usuario 
+    -- PREGUNTA: Cuando se elimina el empleado, se elimina su usuario?
+    -- SELECT USERNAME INTO usuario
     -- FROM ALL_USERS WHERE USER_ID = ide; --
-    
+
     --DROP USER usuario CASCADE--
 END;
-    
-    
+
+
     PROCEDURE PR_MODIFICAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE, des EMPLEADO.DESPEDIDO%TYPE,
-                sueldo EMPLEADO.SUELDOBASE%TYPE, pos EMPLEADO.PUESTO%TYPE, 
-                horas EMPLEADO.HORAS%TYPE, ret EMPLEADO.RETENCIONES%TYPE ) IS         
+                sueldo EMPLEADO.SUELDOBASE%TYPE, pos EMPLEADO.PUESTO%TYPE,
+                horas EMPLEADO.HORAS%TYPE, ret EMPLEADO.RETENCIONES%TYPE ) IS
  des_mal EXCEPTION;
 
 BEGIN
-    IF ( ((des > 1) OR (des < 0) )) then 
+    IF ( ((des > 1) OR (des < 0) )) then
         RAISE des_mal;
     END IF;
 
@@ -868,9 +875,9 @@ BEGIN
     SET DESPEDIDO = des , SUELDOBASE = sueldo ,
     PUESTO = pos , HORAS = horas, RETENCIONES = ret
     WHERE IDEMPLEADO = ide;
-        EXCEPTION 
+        EXCEPTION
          WHEN des_mal THEN
-         DBMS_OUTPUT.PUT_LINE('Valor de "Despido" incorrecto (ingrese 0 o 1)'); 
+         DBMS_OUTPUT.PUT_LINE('Valor de "Despido" incorrecto (ingrese 0 o 1)');
          WHEN OTHERS THEN
          DBMS_OUTPUT.PUT_LINE('Parametros incorrectos.
             Introduce (IDEmpleado, Despido, Sueldo Base, Puesto, Horas, Retenciones)');
@@ -886,7 +893,7 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE(sentencia);
     EXECUTE IMMEDIATE sentencia;
 END;
-    
+
     PROCEDURE PR_DESBLOQUEAR_USUARIO(id ALL_USERS.USER_ID%TYPE ) AS
     usuario ALL_USERS.USERNAME%TYPE;
     sentencia VARCHAR2(500);
@@ -909,7 +916,7 @@ BEGIN
     EXECUTE IMMEDIATE sentencia;
     END LOOP;
 END;
-    
+
 PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS AS
 sentencia VARCHAR(500);
 CURSOR empleados IS
@@ -926,11 +933,12 @@ END;
 /
 
 
-/
 
-
--- [8] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
--- informacion de fidelizacion y los datos de su vehiculo.
+/* [8]
+Escribir un trigger que cuando se eliminen los datos de un cliente
+fidelizado se eliminen a su vez toda su
+informacion de fidelizacion y los datos de su vehiculo.
+*/
 
 CREATE OR REPLACE TRIGGER TR_Eliminar_Cliente_Fidelizado
 BEFORE DELETE ON CLIENTE FOR EACH ROW
@@ -940,21 +948,12 @@ BEGIN
 END;
 /
 
--- [9] Crear un JOB que ejecute el procedimiento P_REVISA todos los dias a las 21:00. Crear otro JOB que, anualmente
--- (el 31 de diciembre a las 23.55), llame a P_Recompensa.
 
---BEGIN
---    DBMS_SCHEDULER.CREATE_JOB (
---        job_name => 'Llamada_A_Recompensas',
---        job_type => 'PLSQL_BLOCK',
---        job_action => 'BEGIN PROCEDURE P_Recompensa END;',
---        start_date => TO_DATE('2020-12-31 23:55:00' , 'YYYY-MM-DD HH24:MI:SS'),
---        repeat_interval => 'FREQ = YEARLY; INTERVAL=1',
---        enabled => TRUE,
---        comments => 'Llama al procedimiento P_Recompensa anualmente el 31 de Diciembre a las 23.55');
---
---END;
---/
+
+/* [9]
+Crear un JOB que ejecute el procedimiento P_REVISA todos los dias a las 21:00.
+Crear otro JOB que llame anualmente a P_Recompensa el 31 de diciembre a las 23:55.
+*/
 
 BEGIN
     DBMS_SCHEDULER.CREATE_JOB (
@@ -969,19 +968,19 @@ BEGIN
             auto_drop => FALSE,
             comments => 'Ejecuta el procedimiento p_revisa');
 
-         
-     
- 
-    DBMS_SCHEDULER.SET_ATTRIBUTE( 
-             name => '"AUTORACLE"."JOB_REVISA"', 
+
+
+
+    DBMS_SCHEDULER.SET_ATTRIBUTE(
+             name => '"AUTORACLE"."JOB_REVISA"',
              attribute => 'store_output', value => TRUE);
-    DBMS_SCHEDULER.SET_ATTRIBUTE( 
-             name => '"AUTORACLE"."JOB_REVISA"', 
+    DBMS_SCHEDULER.SET_ATTRIBUTE(
+             name => '"AUTORACLE"."JOB_REVISA"',
              attribute => 'logging_level', value => DBMS_SCHEDULER.LOGGING_OFF);
-      
-   
-  
-    
+
+
+
+
     DBMS_SCHEDULER.enable(
              name => '"AUTORACLE"."JOB_REVISA"');
 END;
@@ -1000,21 +999,17 @@ BEGIN
             auto_drop => FALSE,
             comments => 'Trabajo que ejecuta el procedimiento p_recompensa');
 
-         
-     
- 
-    DBMS_SCHEDULER.SET_ATTRIBUTE( 
-             name => '"AUTORACLE"."JOB_RECOMPENSA"', 
+
+    DBMS_SCHEDULER.SET_ATTRIBUTE(
+             name => '"AUTORACLE"."JOB_RECOMPENSA"',
              attribute => 'store_output', value => TRUE);
-    DBMS_SCHEDULER.SET_ATTRIBUTE( 
-             name => '"AUTORACLE"."JOB_RECOMPENSA"', 
+
+    DBMS_SCHEDULER.SET_ATTRIBUTE(
+             name => '"AUTORACLE"."JOB_RECOMPENSA"',
              attribute => 'logging_level', value => DBMS_SCHEDULER.LOGGING_OFF);
-      
-   
-  
-    
+
+
     DBMS_SCHEDULER.enable(
              name => '"AUTORACLE"."JOB_RECOMPENSA"');
 END;
 /
-
