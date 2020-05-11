@@ -6,6 +6,10 @@
 -- Activar la opcion de mostrar mensajes por pantalla (1 vez / sesion)
 SET SERVEROUTPUT ON;
 
+/* Que ejercicios funcionan 100%
+  + Ej 1
+  + Ej 2
+  + Ej 4
 
 /* [1]
 Modificar el modelo (si es necesario) para almacenar el usuario de Oracle que
@@ -35,7 +39,7 @@ CREATE ROLE r_cliente;
 -- { permisos para R_ADMINISTRATIVO }
 
 GRANT dba
-    TO r_administrativo;
+    TO R_ADMINISTRATIVO;
 
 GRANT R_ADMINISTRATIVO
     TO AUTORACLE;
@@ -135,6 +139,7 @@ GRANT SELECT
 */
 
 -- Devuelve un filtro para la clausula WHERE.
+
 -- https://www.techonthenet.com/oracle/functions/sys_context.php
 CREATE OR REPLACE
     FUNCTION AUTORACLE.SOLO_EMPLEADO_ACTUAL_EMPLEADO (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
@@ -151,6 +156,7 @@ CREATE OR REPLACE
 -- Devuelve un filtro para la clausula WHERE.
 -- https://www.techonthenet.com/oracle/functions/sys_context.php
 CREATE OR REPLACE
+
     FUNCTION AUTORACLE.SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
         RETURN VARCHAR2 AS
         BEGIN
@@ -161,7 +167,6 @@ CREATE OR REPLACE
             END IF;
         END;
 /
-
 
 /* Eliminar las politicas de R_MECANICO
 BEGIN
@@ -304,7 +309,13 @@ BEGIN
 END;
 /
 
+-- Para comprobar que todas las politicas funcionan
+SELECT * FROM AUTORACLE.CLIENTE; -- { desde SYSTEM }
+SELECT * FROM AUTORACLE.CLIENTE; -- { desde USUARIO1, cuyo ID se asocia a un cliente previamente }
+SELECT * FROM AUTORACLE.EMPLEADO; -- { desde AUTORACLE, que es ABD }
+SELECT * FROM AUTORACLE.EMPLEADO; -- { desde USUARIO2, cuyo ID se asocia a un empleado previamente }
 
+/* [2]
 
 /* [2]
 Crea una tabla denominada COMPRA_FUTURA que incluya el NIF, telefono, nombre e
@@ -323,40 +334,50 @@ CREATE TABLE autoracle.COMPRA_FUTURA (
     CANTIDAD NUMBER(*, 0));
 
 CREATE OR REPLACE
-    PROCEDURE autoracle.p_revisa AS
-        BEGIN
-            DECLARE
-                CURSOR datos IS
-                    SELECT  Pr.nif, Pr.telefono, Pr.nombre, Pr.email,
-                            Pi.cantidad, Pi.codref, Pi.feccaducidad
-                        FROM autoracle.pieza Pi
-                            JOIN autoracle.proveedor Pr ON proveedor_nif = nif;
+    PROCEDURE autoracle.p_revisa IS
+        CURSOR datos IS
+            SELECT  Pr.nif, Pr.telefono, Pr.nombre, Pr.email,
+                    Pi.cantidad, Pi.codref, Pi.feccaducidad
+                FROM autoracle.pieza Pi
+                    JOIN autoracle.proveedor Pr ON proveedor_nif = nif;
 
-                repetida NUMBER;
+        repetida NUMBER;
 
-            BEGIN
-                FOR fila IN datos LOOP
-                    IF fila.feccaducidad < (sysdate-1) THEN
-                        INSERT INTO autoracle.compra_futura
-                                VALUES (
-                                fila.nif,
-                                fila.telefono,
-                                fila.nombre,
-                                fila.email,
-                                fila.codref,
-                                fila.cantidad);
+    BEGIN
+        FOR fila IN datos LOOP
+        
+            IF fila.feccaducidad < (sysdate-1) THEN
+                INSERT INTO autoracle.compra_futura
+                        VALUES (
+                        fila.nif,
+                        fila.telefono,
+                        fila.nombre,
+                        fila.email,
+                        fila.codref,
+                        fila.cantidad);
 
-                        COMMIT;
-                    END IF;
+                COMMIT;
+                
+            END IF;
 
-                END LOOP;
+        END LOOP;
 
-                EXCEPTION
-                    WHEN DUP_VAL_ON_INDEX THEN
-                        DBMS_OUTPUT.put_line('Se ignoraron algunas piezas ya incluidas.');
-            END;
+        EXCEPTION
+        
+            WHEN DUP_VAL_ON_INDEX THEN
+                DBMS_OUTPUT.put_line('Se ignoraron algunas piezas ya incluidas.');
+    
+    END p_revisa;
+/
 
-        END p_revisa;
+-- Comprobamos que funciona
+UPDATE AUTORACLE.PIEZA
+    SET FECCADUCIDAD = SYSDATE - 1
+    WHERE CODREF = '1234';
+
+BEGIN
+    p_revisa;
+END;
 /
 
 
@@ -376,7 +397,7 @@ ALTER TABLE AUTORACLE.FACTURA
 UPDATE AUTORACLE.FACTURA
     SET iva_calculado = 0, total = 0;
 
-CREATE OR REPLACE AUTORACLE.P_CALCULA_FACT AS
+CREATE OR REPLACE PROCEDURE AUTORACLE.P_CALCULA_FACT AS
     iva_mult NUMBER;
     CURSOR tabla IS
         SELECT f.IDFACTURA, f.IVA, p.CODREF, p.PRECIOUNIDADVENTA, p.PRECIOUNIDADCOMPRA
@@ -385,10 +406,10 @@ CREATE OR REPLACE AUTORACLE.P_CALCULA_FACT AS
         JOIN AUTORACLE.PIEZA p ON c.PIEZA_CODREF = p.CODREF;
 BEGIN
     FOR fila IN tabla LOOP
-        iva_mult = 1 + (fila.IVA / 100); -- el IVA es un factor de crecimiento
+        iva_mult := 1 + (fila.IVA / 100); -- el IVA es un factor de crecimiento
         UPDATE AUTORACLE.FACTURA
             SET IVA_CALCULADO = IVA_CALCULADO + iva_mult * fila.PRECIOUNIDADVENTA,
-                TOTAL = TOTAL + (iva_mult * fila.PRECIOUNIDADVENTA) - fila.PRECIOUNIDADCOMPRA
+                TOTAL = TOTAL + ((iva_mult * fila.PRECIOUNIDADVENTA) - fila.PRECIOUNIDADCOMPRA)
             WHERE IDFACTURA = fila.IDFACTURA;
     END LOOP;
 END;
@@ -407,26 +428,23 @@ Dar permiso de seleccion a los Administrativos.
 -- [el coste total de horas trabajadas], y la fecha de emision de la factura
 -- Dada la arquitectura de la BD proporcionada, no hay manera de agregar las horas trabajadas por empleado.
 
-CREATE OR REPLACE VIEW AUTORACLE.V_COSTE_PIEZAS_TOTAL AS
-    SELECT f.IDFACTURA,
-           f.FECEMISION,
-           f.IVA,
-           SUM(p.PRECIOUNIDADVENTA) AS TOTAL_PIEZAS
+CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
+    SELECT TO_CHAR(f.FECEMISION, 'YYYY') AS "ANNO",
+        TO_CHAR(f.FECEMISION, 'Q') AS "TRIMESTRE",
+        (f.IVA / 100) * SUM(p.PRECIOUNIDADVENTA) AS IVA_DEVANGADO
     FROM AUTORACLE.factura f
     JOIN AUTORACLE.contiene c ON f.IDFACTURA = c.FACTURA_IDFACTURA
     JOIN AUTORACLE.pieza p ON p.CODREF = c.PIEZA_CODREF
-    GROUP BY f.IDFACTURA, f.FECEMISION, f.IVA;
+    GROUP BY TO_CHAR(f.FECEMISION, 'YYYY'), 
+            TO_CHAR(f.FECEMISION, 'Q'),
+            f.IVA;
 
-SELECT * FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
+GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE TO R_ADMINISTRATIVO;
 
--- Sorry soy un paquete con los "groups by"
--- https://www.oracletutorial.com/oracle-basics/oracle-group-by/
+-- Comprobamos que funcione
+SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE; -- { desde AUTORACLE (rol administrativo) }
+SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE; -- { desde USUARIO1 (rol cliente) }
 
-CREATE OR REPLACE VIEW AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE AS
-    SELECT TO_CHAR(FECEMISION, 'YYYY') as "año",
-           TO_CHAR(FECEMISION, 'Q') as "cuatrimestre",
-           (IVA / 100) * TOTAL_PIEZAS as "iva_total"
-    FROM AUTORACLE.V_COSTE_PIEZAS_TOTAL;
 
 SELECT * FROM AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE;
 
@@ -616,6 +634,7 @@ END pkg_autoracle_analisis;
 
 
 /* [6]
+
 Añadir al modelo una tabla FIDELIZACION que permite almacenar un descuento por
 cliente y año; y crear un paquete en PL/SQL de gestion de descuentos.
     1.  El procedimiento P_Calcular_Descuento, tomara un cliente y un año y
@@ -638,7 +657,29 @@ CREATE TABLE AUTORACLE.FIDELIZACION(
     anno NUMBER(4)                  -- de 0 a 9999
 );
 
+-- Agregamos algunos datos
+INSERT ALL
+    INTO AUTORACLE.FIDELIZACION
+    VALUES ('200', 10, '2018')
+    
+    INTO AUTORACLE.FIDELIZACION
+    VALUES ('200', 5, '2017')
+    
+    INTO AUTORACLE.FIDELIZACION
+    VALUES ('200', 2, '2016')
+    
+    INTO AUTORACLE.FIDELIZACION
+    VALUES ('22', 7, '2019')
+    
+    INTO AUTORACLE.FIDELIZACION
+    VALUES ('3', 4, '2018')
+SELECT 1 FROM DUAL;
+COMMIT;
+
+SELECT * FROM AUTORACLE.FIDELIZACION; -- { desde Autoracle }
+
 -- Para asegurarnos de que hay UN descuento POR cliente y año, creamos un trigger
+
 CREATE OR REPLACE
   TRIGGER AUTORACLE.TR_ASEGURAR_FIDELIZACION
     BEFORE INSERT OR UPDATE
@@ -661,11 +702,19 @@ CREATE OR REPLACE
 
         END LOOP;
 
+
     EXCEPTION
         WHEN descuento_ya_existe THEN
             RAISE_APPLICATION_ERROR(-20015, 'Ya existe un descuento para el cliente '||:new.CLIENTE_IDCLIENTE||' en el año '||:new.ANNO);
     END;
 /
+
+-- Comprobamos que funciona el trigger
+INSERT INTO AUTORACLE.FIDELIZACION
+    VALUES ('200', 6, '2018'); -- devuelve error
+
+INSERT INTO AUTORACLE.FIDELIZACION
+    VALUES ('200', 6, '2019');
 
 
 -- Ahora, creamos el paquete :)
@@ -689,6 +738,7 @@ CREATE OR REPLACE
 
             BEGIN
                 -- Todas las facturas del cliente (en ese año)
+
                 SELECT COUNT(*) INTO facturas
                     FROM AUTORACLE.FACTURA
                         WHERE CLIENTE_IDCLIENTE = cliente
@@ -696,6 +746,7 @@ CREATE OR REPLACE
 
 
                 -- Todas las citas con mas de 5 dias de espera (en ese año)
+
                 SELECT COUNT(*) INTO citas5dias
                     FROM AUTORACLE.CITA
                         WHERE CLIENTE_IDCLIENTE = cliente
@@ -706,7 +757,9 @@ CREATE OR REPLACE
                 SELECT AVG(FECREALIZACION - FECAPERTURA) INTO media_horas
                     FROM SERVICIO;
 
+
                 -- Todos los servicios con mas de la media de dias de espera (en ese año)
+
                 SELECT COUNT(*) INTO servicios_largos
                     FROM AUTORACLE.SERVICIO s
                         JOIN AUTORACLE.VEHICULO v ON s.VEHICULO_NUMBASTIDOR = v.NUMBASTIDOR
@@ -714,7 +767,9 @@ CREATE OR REPLACE
                             AND TO_CHAR(s.FECAPERTURA, 'YYYY') = TO_CHAR(anno)
                             AND (FECREALIZACION - FECAPERTURA) > media_horas;
 
+
                 -- Guardamos el descuento para el año siguiente (maximo 10%)
+
                 v_descuento := LEAST(facturas + citas5dias + servicios_largos, 10);
 
                 INSERT INTO AUTORACLE.FIDELIZACION
@@ -758,15 +813,125 @@ y desbloquear todas las cuentas de los empleados.
 */
 
 CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
-    PROCEDURE PR_CREAR_EMPLEADO;
-    PROCEDURE PR_MODIFICAR_EMPLEADO;
-    PROCEDURE PR_BLOQUEAR_DESBLOQUEAR_USUARIO;
-    PROCEDURE PR_BLOQUEAR_DESBLOQUEAR_ALL_USUARIOS;
+    PROCEDURE PR_CREAR_EMPLEADO(nombre EMPLEADO.NOMBRE%TYPE, ap EMPLEADO.APELLIDO1%TYPE);
+     PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE);
+    PROCEDURE PR_MODIFICAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE, des EMPLEADO.DESPEDIDO%TYPE,
+                sueldo EMPLEADO.SUELDOBASE%TYPE, pos EMPLEADO.PUESTO%TYPE, 
+                horas EMPLEADO.HORAS%TYPE, ret EMPLEADO.RETENCIONES%TYPE );
+   PROCEDURE PR_BLOQUEAR_USUARIO(id ALL_USERS.USER_ID%TYPE );
+   PROCEDURE PR_DESBLOQUEAR_USUARIO(id ALL_USERS.USER_ID%TYPE );
+   PROCEDURE PR_BLOQUEAR_TODOS_EMPLEADOS;
+   PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS;
+    
 END;
 
-CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS IS
-    -- PENDIENTE
+CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
+    
+    PROCEDURE PR_CREAR_EMPLEADO(nombre EMPLEADO.NOMBRE%TYPE, ap EMPLEADO.APELLIDO1%TYPE) IS
+
+identificacion NUMBER;
+
+sentencia VARCHAR2(500);
+
+BEGIN
+    sentencia := 'CREATE USER ' || nombre || ' IDENTIFIED BY ' || nombre || ' 
+    DEFAULT TABLESPACE TS_AUTORACLE';
+    DBMS_OUTPUT.PUT_LINE(sentencia);
+    EXECUTE IMMEDIATE sentencia;
+    --Se ejecuta la sentencia, Se crea el usuario para el empleado y un ID aleatorio--
+    SELECT USER_ID INTO identificacion FROM ALL_USERS WHERE USERNAME = nombre;
+    --Este select no funciona porque cuando se ejecuta el Select, no esta el dato aun en la BD 
+    --(aunque deberia estar, porque la sentencia EXECUTE IMMEDIATE sirve para eso)--
+    INSERT INTO EMPLEADO(IDEMPLEADO, NOMBRE, APELLIDO1, FECENTRADA, DESPEDIDO, SUELDOBASE)
+        VALUES(identificacion, nombre, ap, sysdate, 0, 1500);
+
 END;
+    
+    
+    PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE) IS
+    usuario All_USERS.USER_ID%TYPE;
+BEGIN
+
+    delete FROM empleado
+    where IDEMPLEADO = ide;
+    --�Cuando se elimina el empleado se elimina su usuario ? 
+    -- SELECT USERNAME INTO usuario 
+    -- FROM ALL_USERS WHERE USER_ID = ide; --
+    
+    --DROP USER usuario CASCADE--
+END;
+    
+    
+    PROCEDURE PR_MODIFICAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE, des EMPLEADO.DESPEDIDO%TYPE,
+                sueldo EMPLEADO.SUELDOBASE%TYPE, pos EMPLEADO.PUESTO%TYPE, 
+                horas EMPLEADO.HORAS%TYPE, ret EMPLEADO.RETENCIONES%TYPE ) IS         
+ des_mal EXCEPTION;
+
+BEGIN
+    IF ( ((des > 1) OR (des < 0) )) then 
+        RAISE des_mal;
+    END IF;
+
+    UPDATE EMPLEADO
+    SET DESPEDIDO = des , SUELDOBASE = sueldo ,
+    PUESTO = pos , HORAS = horas, RETENCIONES = ret
+    WHERE IDEMPLEADO = ide;
+        EXCEPTION 
+         WHEN des_mal THEN
+         DBMS_OUTPUT.PUT_LINE('Valor de "Despido" incorrecto (ingrese 0 o 1)'); 
+         WHEN OTHERS THEN
+         DBMS_OUTPUT.PUT_LINE('Parametros incorrectos.
+            Introduce (IDEmpleado, Despido, Sueldo Base, Puesto, Horas, Retenciones)');
+END;
+
+    PROCEDURE PR_BLOQUEAR_USUARIO(id ALL_USERS.USER_ID%TYPE ) AS
+    usuario ALL_USERS.USERNAME%TYPE;
+    sentencia VARCHAR2(500);
+BEGIN
+    SELECT USERNAME INTO usuario FROM ALL_USERS WHERE USER_ID = id;
+
+    sentencia := 'ALTER USER ' || usuario || ' ACCOUNT LOCK' ;
+    DBMS_OUTPUT.PUT_LINE(sentencia);
+    EXECUTE IMMEDIATE sentencia;
+END;
+    
+    PROCEDURE PR_DESBLOQUEAR_USUARIO(id ALL_USERS.USER_ID%TYPE ) AS
+    usuario ALL_USERS.USERNAME%TYPE;
+    sentencia VARCHAR2(500);
+BEGIN
+    SELECT USERNAME INTO usuario FROM ALL_USERS WHERE USER_ID = id;
+
+    sentencia := 'ALTER USER ' || usuario || ' ACCOUNT UNLOCK' ;
+    DBMS_OUTPUT.PUT_LINE(sentencia);
+    EXECUTE IMMEDIATE sentencia;
+END;
+
+PROCEDURE PR_BLOQUEAR_TODOS_EMPLEADOS AS
+sentencia VARCHAR(500);
+CURSOR empleados IS
+    SELECT NOMBRE FROM EMPLEADO;
+
+BEGIN
+    FOR nom IN empleados LOOP
+    sentencia := 'ALTER USER ' || nom.NOMBRE || ' ACCOUNT LOCK';
+    EXECUTE IMMEDIATE sentencia;
+    END LOOP;
+END;
+    
+PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS AS
+sentencia VARCHAR(500);
+CURSOR empleados IS
+    SELECT NOMBRE FROM EMPLEADO;
+
+BEGIN
+    FOR nom IN empleados LOOP
+    sentencia := 'ALTER USER ' || nom.NOMBRE || ' ACCOUNT UNLOCK';
+    EXECUTE IMMEDIATE sentencia;
+    END LOOP;
+END;
+
+END;
+/
 
 
 
@@ -793,13 +958,63 @@ Crear otro JOB que llame anualmente a P_Recompensa el 31 de diciembre a las 23:5
 
 BEGIN
     DBMS_SCHEDULER.CREATE_JOB (
-        job_name => 'Llamada_A_Recompensas',
-        job_type => 'PLSQL_BLOCK',
-        job_action => 'BEGIN PROCEDURE P_Recompensa END;',
-        start_date => TO_DATE('2020-12-31 23:55:00' , 'YYYY-MM-DD HH24:MI:SS'),
-        repeat_interval => 'FREQ = YEARLY; INTERVAL=1',
-        enabled => TRUE,
-        comments => 'Llama al procedimiento P_Recompensa anualmente el 31 de Diciembre a las 23.55');
+            job_name => '"AUTORACLE"."JOB_REVISA"',
+            job_type => 'STORED_PROCEDURE',
+            job_action => 'AUTORACLE.P_REVISA',
+            number_of_arguments => 0,
+            start_date => NULL,
+            repeat_interval => 'FREQ=DAILY;BYTIME=210000',
+            end_date => NULL,
+            enabled => FALSE,
+            auto_drop => FALSE,
+            comments => 'Ejecuta el procedimiento p_revisa');
 
+         
+     
+ 
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"AUTORACLE"."JOB_REVISA"', 
+             attribute => 'store_output', value => TRUE);
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"AUTORACLE"."JOB_REVISA"', 
+             attribute => 'logging_level', value => DBMS_SCHEDULER.LOGGING_OFF);
+      
+   
+  
+    
+    DBMS_SCHEDULER.enable(
+             name => '"AUTORACLE"."JOB_REVISA"');
 END;
 /
+
+BEGIN
+    DBMS_SCHEDULER.CREATE_JOB (
+            job_name => '"AUTORACLE"."JOB_RECOMPENSA"',
+            job_type => 'STORED_PROCEDURE',
+            job_action => 'AUTORACLE.P_RECOMPENSA',
+            number_of_arguments => 0,
+            start_date => NULL,
+            repeat_interval => 'FREQ=YEARLY;BYDATE=1231;BYTIME=235500',
+            end_date => NULL,
+            enabled => FALSE,
+            auto_drop => FALSE,
+            comments => 'Trabajo que ejecuta el procedimiento p_recompensa');
+
+         
+     
+ 
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"AUTORACLE"."JOB_RECOMPENSA"', 
+             attribute => 'store_output', value => TRUE);
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"AUTORACLE"."JOB_RECOMPENSA"', 
+             attribute => 'logging_level', value => DBMS_SCHEDULER.LOGGING_OFF);
+      
+   
+  
+    
+    DBMS_SCHEDULER.enable(
+             name => '"AUTORACLE"."JOB_RECOMPENSA"');
+END;
+/
+
