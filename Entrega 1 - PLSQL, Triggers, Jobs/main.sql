@@ -6,10 +6,7 @@
 -- Activar la opcion de mostrar mensajes por pantalla (1 vez / sesion)
 SET SERVEROUTPUT ON;
 
-/* Que ejercicios funcionan 100%
-  + Ej 1
-  + Ej 2
-  + Ej 4
+
 
 /* [1]
 Modificar el modelo (si es necesario) para almacenar el usuario de Oracle que
@@ -424,38 +421,18 @@ devengado (suma del IVA de las facturas de ese trimestre).
 Dar permiso de seleccion a los Administrativos.
 */
 
--- Suponiendo que existe una vista V_COSTE_PIEZAS_TOTAL que proporcione, para cada factura, el coste total de piezas y
--- [el coste total de horas trabajadas], y la fecha de emision de la factura
--- Dada la arquitectura de la BD proporcionada, no hay manera de agregar las horas trabajadas por empleado.
+CREATE OR REPLACE
+    VIEW AUTORACLE.V_IVA_TRIMESTRE AS
+        SELECT  TO_CHAR(f.FECEMISION, 'YYYY') AS "ANNO",
+                TO_CHAR(f.FECEMISION, 'Q') AS "TRIMESTRE",
+                (f.IVA / 100) * SUM(p.PRECIOUNIDADVENTA) AS IVA_DEVANGADO
+            FROM AUTORACLE.factura f
+                JOIN AUTORACLE.contiene c ON f.IDFACTURA = c.FACTURA_IDFACTURA
+                JOIN AUTORACLE.pieza p ON p.CODREF = c.PIEZA_CODREF
+                GROUP BY TO_CHAR(f.FECEMISION, 'YYYY'), TO_CHAR(f.FECEMISION, 'Q'), f.IVA;
 
-CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
-    SELECT TO_CHAR(f.FECEMISION, 'YYYY') AS "ANNO",
-        TO_CHAR(f.FECEMISION, 'Q') AS "TRIMESTRE",
-        (f.IVA / 100) * SUM(p.PRECIOUNIDADVENTA) AS IVA_DEVANGADO
-    FROM AUTORACLE.factura f
-    JOIN AUTORACLE.contiene c ON f.IDFACTURA = c.FACTURA_IDFACTURA
-    JOIN AUTORACLE.pieza p ON p.CODREF = c.PIEZA_CODREF
-    GROUP BY TO_CHAR(f.FECEMISION, 'YYYY'),
-            TO_CHAR(f.FECEMISION, 'Q'),
-            f.IVA;
-
-GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE TO R_ADMINISTRATIVO;
-
--- Comprobamos que funcione
-SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE; -- { desde AUTORACLE (rol administrativo) }
-SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE; -- { desde USUARIO1 (rol cliente) }
-
-
-SELECT * FROM AUTORACLE.V_INTERMEDIA_IVA_TRIMESTRE;
-
-CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
-    SELECT "año", "cuatrimestre", SUM("iva_total") as "iva_total"
-    FROM V_INTERMEDIA_IVA_TRIMESTRE
-    GROUP BY "año", "cuatrimestre";
-
-SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE;
-
-GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE TO R_ADMINISTRATIVO;
+GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE
+    TO R_ADMINISTRATIVO;
 
 
 
@@ -813,7 +790,7 @@ y desbloquear todas las cuentas de los empleados.
 
 CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
     PROCEDURE PR_CREAR_EMPLEADO(nombre EMPLEADO.NOMBRE%TYPE, ap EMPLEADO.APELLIDO1%TYPE);
-     PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE);
+    PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE);
     PROCEDURE PR_MODIFICAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE, des EMPLEADO.DESPEDIDO%TYPE,
                 sueldo EMPLEADO.SUELDOBASE%TYPE, pos EMPLEADO.PUESTO%TYPE,
                 horas EMPLEADO.HORAS%TYPE, ret EMPLEADO.RETENCIONES%TYPE );
@@ -822,7 +799,8 @@ CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
    PROCEDURE PR_BLOQUEAR_TODOS_EMPLEADOS;
    PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS;
 
-END;
+END PKG_GESTION_EMPLEADOS;
+/
 
 CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
 
@@ -929,7 +907,7 @@ BEGIN
     END LOOP;
 END;
 
-END;
+END PKG_GESTION_EMPLEADOS;
 /
 
 
