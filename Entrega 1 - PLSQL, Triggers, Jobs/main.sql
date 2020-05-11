@@ -310,12 +310,12 @@ END;
 /
 
 -- Para comprobar que todas las politicas funcionan
-SELECT * FROM AUTORACLE.CLIENTE; -- { desde SYSTEM }
-SELECT * FROM AUTORACLE.CLIENTE; -- { desde USUARIO1, cuyo ID se asocia a un cliente previamente }
+SELECT * FROM AUTORACLE.CLIENTE;  -- { desde SYSTEM }
+SELECT * FROM AUTORACLE.CLIENTE;  -- { desde USUARIO1, cuyo ID se asocia a un cliente previamente }
 SELECT * FROM AUTORACLE.EMPLEADO; -- { desde AUTORACLE, que es ABD }
 SELECT * FROM AUTORACLE.EMPLEADO; -- { desde USUARIO2, cuyo ID se asocia a un empleado previamente }
 
-/* [2]
+
 
 /* [2]
 Crea una tabla denominada COMPRA_FUTURA que incluya el NIF, telefono, nombre e
@@ -345,7 +345,7 @@ CREATE OR REPLACE
 
     BEGIN
         FOR fila IN datos LOOP
-        
+
             IF fila.feccaducidad < (sysdate-1) THEN
                 INSERT INTO autoracle.compra_futura
                         VALUES (
@@ -357,16 +357,16 @@ CREATE OR REPLACE
                         fila.cantidad);
 
                 COMMIT;
-                
+
             END IF;
 
         END LOOP;
 
         EXCEPTION
-        
+
             WHEN DUP_VAL_ON_INDEX THEN
                 DBMS_OUTPUT.put_line('Se ignoraron algunas piezas ya incluidas.');
-    
+
     END p_revisa;
 /
 
@@ -435,7 +435,7 @@ CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
     FROM AUTORACLE.factura f
     JOIN AUTORACLE.contiene c ON f.IDFACTURA = c.FACTURA_IDFACTURA
     JOIN AUTORACLE.pieza p ON p.CODREF = c.PIEZA_CODREF
-    GROUP BY TO_CHAR(f.FECEMISION, 'YYYY'), 
+    GROUP BY TO_CHAR(f.FECEMISION, 'YYYY'),
             TO_CHAR(f.FECEMISION, 'Q'),
             f.IVA;
 
@@ -634,7 +634,6 @@ END pkg_autoracle_analisis;
 
 
 /* [6]
-
 Añadir al modelo una tabla FIDELIZACION que permite almacenar un descuento por
 cliente y año; y crear un paquete en PL/SQL de gestion de descuentos.
     1.  El procedimiento P_Calcular_Descuento, tomara un cliente y un año y
@@ -661,16 +660,16 @@ CREATE TABLE AUTORACLE.FIDELIZACION(
 INSERT ALL
     INTO AUTORACLE.FIDELIZACION
     VALUES ('200', 10, '2018')
-    
+
     INTO AUTORACLE.FIDELIZACION
     VALUES ('200', 5, '2017')
-    
+
     INTO AUTORACLE.FIDELIZACION
     VALUES ('200', 2, '2016')
-    
+
     INTO AUTORACLE.FIDELIZACION
     VALUES ('22', 7, '2019')
-    
+
     INTO AUTORACLE.FIDELIZACION
     VALUES ('3', 4, '2018')
 SELECT 1 FROM DUAL;
@@ -816,17 +815,17 @@ CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
     PROCEDURE PR_CREAR_EMPLEADO(nombre EMPLEADO.NOMBRE%TYPE, ap EMPLEADO.APELLIDO1%TYPE);
      PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE);
     PROCEDURE PR_MODIFICAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE, des EMPLEADO.DESPEDIDO%TYPE,
-                sueldo EMPLEADO.SUELDOBASE%TYPE, pos EMPLEADO.PUESTO%TYPE, 
+                sueldo EMPLEADO.SUELDOBASE%TYPE, pos EMPLEADO.PUESTO%TYPE,
                 horas EMPLEADO.HORAS%TYPE, ret EMPLEADO.RETENCIONES%TYPE );
    PROCEDURE PR_BLOQUEAR_USUARIO(id ALL_USERS.USER_ID%TYPE );
    PROCEDURE PR_DESBLOQUEAR_USUARIO(id ALL_USERS.USER_ID%TYPE );
    PROCEDURE PR_BLOQUEAR_TODOS_EMPLEADOS;
    PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS;
-    
+
 END;
 
 CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
-    
+
     PROCEDURE PR_CREAR_EMPLEADO(nombre EMPLEADO.NOMBRE%TYPE, ap EMPLEADO.APELLIDO1%TYPE) IS
 
 identificacion NUMBER;
@@ -834,41 +833,41 @@ identificacion NUMBER;
 sentencia VARCHAR2(500);
 
 BEGIN
-    sentencia := 'CREATE USER ' || nombre || ' IDENTIFIED BY ' || nombre || ' 
+    sentencia := 'CREATE USER ' || nombre || ' IDENTIFIED BY ' || nombre || '
     DEFAULT TABLESPACE TS_AUTORACLE';
     DBMS_OUTPUT.PUT_LINE(sentencia);
     EXECUTE IMMEDIATE sentencia;
     --Se ejecuta la sentencia, Se crea el usuario para el empleado y un ID aleatorio--
     SELECT USER_ID INTO identificacion FROM ALL_USERS WHERE USERNAME = nombre;
-    --Este select no funciona porque cuando se ejecuta el Select, no esta el dato aun en la BD 
+    --Este select no funciona porque cuando se ejecuta el Select, no esta el dato aun en la BD
     --(aunque deberia estar, porque la sentencia EXECUTE IMMEDIATE sirve para eso)--
     INSERT INTO EMPLEADO(IDEMPLEADO, NOMBRE, APELLIDO1, FECENTRADA, DESPEDIDO, SUELDOBASE)
         VALUES(identificacion, nombre, ap, sysdate, 0, 1500);
 
 END;
-    
-    
+
+
     PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE) IS
     usuario All_USERS.USER_ID%TYPE;
 BEGIN
 
     delete FROM empleado
     where IDEMPLEADO = ide;
-    --�Cuando se elimina el empleado se elimina su usuario ? 
-    -- SELECT USERNAME INTO usuario 
+    -- PREGUNTA: Cuando se elimina el empleado, se elimina su usuario?
+    -- SELECT USERNAME INTO usuario
     -- FROM ALL_USERS WHERE USER_ID = ide; --
-    
+
     --DROP USER usuario CASCADE--
 END;
-    
-    
+
+
     PROCEDURE PR_MODIFICAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE, des EMPLEADO.DESPEDIDO%TYPE,
-                sueldo EMPLEADO.SUELDOBASE%TYPE, pos EMPLEADO.PUESTO%TYPE, 
-                horas EMPLEADO.HORAS%TYPE, ret EMPLEADO.RETENCIONES%TYPE ) IS         
+                sueldo EMPLEADO.SUELDOBASE%TYPE, pos EMPLEADO.PUESTO%TYPE,
+                horas EMPLEADO.HORAS%TYPE, ret EMPLEADO.RETENCIONES%TYPE ) IS
  des_mal EXCEPTION;
 
 BEGIN
-    IF ( ((des > 1) OR (des < 0) )) then 
+    IF ( ((des > 1) OR (des < 0) )) then
         RAISE des_mal;
     END IF;
 
@@ -876,9 +875,9 @@ BEGIN
     SET DESPEDIDO = des , SUELDOBASE = sueldo ,
     PUESTO = pos , HORAS = horas, RETENCIONES = ret
     WHERE IDEMPLEADO = ide;
-        EXCEPTION 
+        EXCEPTION
          WHEN des_mal THEN
-         DBMS_OUTPUT.PUT_LINE('Valor de "Despido" incorrecto (ingrese 0 o 1)'); 
+         DBMS_OUTPUT.PUT_LINE('Valor de "Despido" incorrecto (ingrese 0 o 1)');
          WHEN OTHERS THEN
          DBMS_OUTPUT.PUT_LINE('Parametros incorrectos.
             Introduce (IDEmpleado, Despido, Sueldo Base, Puesto, Horas, Retenciones)');
@@ -894,7 +893,7 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE(sentencia);
     EXECUTE IMMEDIATE sentencia;
 END;
-    
+
     PROCEDURE PR_DESBLOQUEAR_USUARIO(id ALL_USERS.USER_ID%TYPE ) AS
     usuario ALL_USERS.USERNAME%TYPE;
     sentencia VARCHAR2(500);
@@ -917,7 +916,7 @@ BEGIN
     EXECUTE IMMEDIATE sentencia;
     END LOOP;
 END;
-    
+
 PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS AS
 sentencia VARCHAR(500);
 CURSOR empleados IS
@@ -969,19 +968,19 @@ BEGIN
             auto_drop => FALSE,
             comments => 'Ejecuta el procedimiento p_revisa');
 
-         
-     
- 
-    DBMS_SCHEDULER.SET_ATTRIBUTE( 
-             name => '"AUTORACLE"."JOB_REVISA"', 
+
+
+
+    DBMS_SCHEDULER.SET_ATTRIBUTE(
+             name => '"AUTORACLE"."JOB_REVISA"',
              attribute => 'store_output', value => TRUE);
-    DBMS_SCHEDULER.SET_ATTRIBUTE( 
-             name => '"AUTORACLE"."JOB_REVISA"', 
+    DBMS_SCHEDULER.SET_ATTRIBUTE(
+             name => '"AUTORACLE"."JOB_REVISA"',
              attribute => 'logging_level', value => DBMS_SCHEDULER.LOGGING_OFF);
-      
-   
-  
-    
+
+
+
+
     DBMS_SCHEDULER.enable(
              name => '"AUTORACLE"."JOB_REVISA"');
 END;
@@ -1000,21 +999,17 @@ BEGIN
             auto_drop => FALSE,
             comments => 'Trabajo que ejecuta el procedimiento p_recompensa');
 
-         
-     
- 
-    DBMS_SCHEDULER.SET_ATTRIBUTE( 
-             name => '"AUTORACLE"."JOB_RECOMPENSA"', 
+
+    DBMS_SCHEDULER.SET_ATTRIBUTE(
+             name => '"AUTORACLE"."JOB_RECOMPENSA"',
              attribute => 'store_output', value => TRUE);
-    DBMS_SCHEDULER.SET_ATTRIBUTE( 
-             name => '"AUTORACLE"."JOB_RECOMPENSA"', 
+
+    DBMS_SCHEDULER.SET_ATTRIBUTE(
+             name => '"AUTORACLE"."JOB_RECOMPENSA"',
              attribute => 'logging_level', value => DBMS_SCHEDULER.LOGGING_OFF);
-      
-   
-  
-    
+
+
     DBMS_SCHEDULER.enable(
              name => '"AUTORACLE"."JOB_RECOMPENSA"');
 END;
 /
-
