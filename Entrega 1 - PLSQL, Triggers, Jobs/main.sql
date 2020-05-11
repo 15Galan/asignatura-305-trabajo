@@ -7,7 +7,7 @@
 SET SERVEROUTPUT ON;
 
 
-/* [1] (desde SYSDBA)
+/* [1]
 Modificar el modelo (si es necesario) para almacenar el usuario de Oracle que
 cada empleado o cliente pueda utilizar para conectarse a la base de datos.
 Ademas, habra que crear roles dependiendo del tipo de usuario:
@@ -307,9 +307,11 @@ END;
 
 
 /* [2]
-Crea una tabla denominada COMPRA_FUTURA que incluya el NIF, telefono, nombre e email del proveedor, referencia de pieza y
-cantidad. Necesitamos un procedimiento P_REVISA que cuando se ejecute compruebe si las piezas han caducado. De esta forma,
-insertara en COMPRA_FUTURA aquellas piezas caducadas junto a los datos necesarios para realizar en el futuro la compra.
+Crea una tabla denominada COMPRA_FUTURA que incluya el NIF, telefono, nombre e
+email del proveedor, referencia de pieza y cantidad. Necesitamos un procedimiento
+P_REVISA que cuando se ejecute compruebe si las piezas han caducado.
+De esta forma, insertara en COMPRA_FUTURA aquellas piezas caducadas junto a los
+datos necesarios para realizar en el futuro la compra.
 */
 
 CREATE TABLE autoracle.COMPRA_FUTURA (
@@ -357,9 +359,13 @@ CREATE OR REPLACE
         END p_revisa;
 /
 
+
+
 /* [3]
-Añadir dos campos a la tabla factura: iva calculado y total. Implementar un procedimiento P_CALCULA_FACT que recorre los
-datos necesarios de las piezas utilizadas y el porcentaje de iva y calcula la cantidad en euros para estos dos campos.
+Añadir dos campos a la tabla factura: iva calculado y total
+Implementar un procedimiento P_CALCULA_FACT que recorre los datos necesarios de
+las piezas utilizadas y el porcentaje de iva y calcula la cantidad en euros para
+estos dos campos.
 */
 
 ALTER TABLE AUTORACLE.FACTURA
@@ -388,9 +394,12 @@ BEGIN
 END;
 /
 
-/* [4] ----------- HECHO -----------
-Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO, TRIMESTRE, IVA_TOTAL siendo trimestre
-un numero de 1 a 4. El IVA_TOTAL es el IVA devengado (suma del IVA de las facturas de ese trimestre).
+
+
+/* [4]
+Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO,
+TRIMESTRE, IVA_TOTAL siendo trimestre un numero de 1 a 4. El IVA_TOTAL es el IVA
+devengado (suma del IVA de las facturas de ese trimestre).
 Dar permiso de seleccion a los Administrativos.
 */
 
@@ -429,6 +438,8 @@ CREATE OR REPLACE VIEW AUTORACLE.V_IVA_TRIMESTRE AS
 SELECT * FROM AUTORACLE.V_IVA_TRIMESTRE;
 
 GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE TO R_ADMINISTRATIVO;
+
+
 
 /* [5]
 Crear un paquete en PL/SQL de analisis de datos que contenga:
@@ -737,11 +748,13 @@ END pkg_gestion_descuentos;
 
 
 /* [7]
-Crear un paquete en PL/SQL de gestion de empleados que incluya las operaciones para crear, borrar y modificar los datos de un
-empleado. Hay que tener en cuenta que algunos empleados tienen un usuario y, por tanto, al insertar o modificar un empleado,
-si su usuario no es nulo, habra que crear su usuario.
-Ademas, el paquete ofrecera procedimientos para bloquear/desbloquear cuentas de usuarios de modo individual.
-Tambien se debe disponer de una opcion para bloquear y desbloquear todas las cuentas de los empleados.
+Crear un paquete en PL/SQL de gestion de empleados que incluya las operaciones
+para crear, borrar y modificar los datos de un empleado. Hay que tener en cuenta
+que algunos empleados tienen un usuario y, por tanto, al insertar o modificar un
+empleado, si su usuario no es nulo, habra que crear su usuario.
+Ademas, el paquete ofrecera procedimientos para bloquear/desbloquear cuentas de
+usuarios de modo individual. Tambien se debe disponer de una opcion para bloquear
+y desbloquear todas las cuentas de los empleados.
 */
 
 CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
@@ -755,8 +768,13 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS IS
     -- PENDIENTE
 END;
 
--- [8] Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su
--- informacion de fidelizacion y los datos de su vehiculo.
+
+
+/* [8]
+Escribir un trigger que cuando se eliminen los datos de un cliente
+fidelizado se eliminen a su vez toda su
+informacion de fidelizacion y los datos de su vehiculo.
+*/
 
 CREATE OR REPLACE TRIGGER TR_Eliminar_Cliente_Fidelizado
 BEFORE DELETE ON CLIENTE FOR EACH ROW
@@ -766,8 +784,12 @@ BEGIN
 END;
 /
 
--- [9] Crear un JOB que ejecute el procedimiento P_REVISA todos los dias a las 21:00. Crear otro JOB que, anualmente
--- (el 31 de diciembre a las 23.55), llame a P_Recompensa.
+
+
+/* [9]
+Crear un JOB que ejecute el procedimiento P_REVISA todos los dias a las 21:00.
+Crear otro JOB que llame anualmente a P_Recompensa el 31 de diciembre a las 23:55.
+*/
 
 BEGIN
     DBMS_SCHEDULER.CREATE_JOB (
