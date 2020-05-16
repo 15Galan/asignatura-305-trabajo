@@ -456,7 +456,7 @@ Crear un paquete en PL/SQL de analisis de datos que contenga:
 -- Primero, agrupamos las funciones y procedimientos en un paquete
 -- http://www.rebellionrider.com/how-to-create-pl-sql-packages-in-oracle-database/
 CREATE OR REPLACE
-    PACKAGE autoracle.PKG_AUTORACLE_ANALISIS AS
+    PACKAGE autoracle.pkg_analisis_datos AS
 
     TYPE MEDIA_MIN_MAX_UNITS IS
         RECORD (media NUMBER, minimo NUMBER, maximo NUMBER);
@@ -467,19 +467,19 @@ CREATE OR REPLACE
     FUNCTION F_CALCULAR_PIEZAS(codref IN VARCHAR2, anno in VARCHAR2)
         RETURN MEDIA_MIN_MAX_UNITS;
 
-    FUNCTION F_CALCULAR_TIEMPOS(servicio IN NUMBER)
+    FUNCTION F_CALCULAR_TIEMPOS
         RETURN tiempos_servicio;
 
     PROCEDURE P_RECOMPENSA;
 
-END pkg_autoracle_analisis;
+END pkg_analisis_datos;
 /
 
 
--- Creamos las funciones y procedimientos del paquete (RECOMIENDO probar a definirlas fuera del paquete para ver si
--- compilan, y despues borrarlas)
+-- Creamos las funciones y procedimientos del paquete (RECOMIENDO probar a
+-- definirlas fuera del paquete para ver si compilan, y despues borrarlas)
 CREATE OR REPLACE
-    PACKAGE BODY AUTORACLE.PKG_AUTORACLE_ANALISIS AS
+    PACKAGE BODY AUTORACLE.pkg_analisis_datos AS
 
     FUNCTION F_CALCULAR_PIEZAS(codref IN VARCHAR2, anno in VARCHAR2)
         RETURN MEDIA_MIN_MAX_UNITS AS
@@ -526,89 +526,88 @@ CREATE OR REPLACE
 
     -- Es una funcion, pero entiendo que si se usa para TODOS los servicios,
     -- entonces es mejor un Procedimiento.
-    FUNCTION F_CALCULAR_TIEMPOS(servicio IN NUMBER)
+    FUNCTION F_CALCULAR_TIEMPOS
         RETURN TIEMPOS_SERVICIO AS
+
+            dias_totales NUMBER := 0;
+            horas_totales NUMBER := 0;
+            servicios_totales NUMBER := 0;
 
             resultado TIEMPOS_SERVICIO;
 
             CURSOR datos IS
-                SELECT  SUM(S.fecrealizacion - S.fecrecepcion) / COUNT(S.idservicio) AS media_dias,
-                        SUM(R.horas) / COUNT(S.idservicio) AS media_horas,
-                        S.idservicio AS id_servicio
+                SELECT  S.idservicio AS id_servicio,
+                        SUM(S.fecrealizacion - S.fecrecepcion) AS num_dias,
+                        SUM(R.horas) AS num_horas
                     FROM servicio S
                         JOIN reparacion R ON S.idservicio = R.idservicio
                         GROUP BY S.idservicio;
 
         BEGIN
             FOR fila IN DATOS LOOP
-                IF servicio = fila.id_servicio THEN
-                    resultado.dias := fila.media_dias;
-                    resultado.horas := fila.media_horas;
+                IF fila.num_dias IS NOT NULL AND fila.num_horas IS NOT NULL THEN
+                    dias_totales := dias_totales + fila.num_dias;
+                    horas_totales := horas_totales + fila.num_horas;
+                    servicios_totales := servicios_totales + 1;
 
                 END IF;
 
             END LOOP;
+
+            resultado.dias := dias_totales / servicios_totales;
+            resultado.horas := horas_totales / servicios_totales;
 
             RETURN resultado;
         END;
 
     -- Creo que este procedimiento usa las funcion del (2) para cada servicio
     PROCEDURE P_RECOMPENSA AS
-        servicio_mas_lento_horas NUMBER := 0;       -- Se esperan valores '>0'
-        servicio_mas_rapido_horas NUMBER := 1000;   -- Se esperan valores '<1000'
-
         servicio_mas_lento NUMBER;
+        servicio_mas_lento_dias NUMBER := 0;       -- Se esperan valores '>0'
         servicio_mas_lento_idempleado NUMBER;
 
         servicio_mas_rapido NUMBER;
+        servicio_mas_rapido_dias NUMBER := 1000;   -- Se esperan valores '<1000'
         servicio_mas_rapido_idempleado NUMBER;
 
-        -- Debe revisarse como usar un dato de un RECORD (error de tipo)
-        /* El cursor debe ser reparado
+        tiempo_medio TIEMPOS_SERVICIO := F_CALCULAR_TIEMPOS;
+
         CURSOR servicios IS
-            SELECT F_CALCULAR_TIEMPOS(s.IDSERVICIO).dias as MEDIA_DIAS,
-                   s.IDSERVICIO as IDSERVICIO,
-                   t.EMPLEADO_IDEMPLEADO as IDEMPLEADO
+            SELECT s.IDSERVICIO as id_servicio,
+                   t.EMPLEADO_IDEMPLEADO as id_empleado
                 FROM AUTORACLE.SERVICIO s
                     JOIN AUTORACLE.TRABAJA t ON s.IDSERVICIO = t.SERVICIO_IDSERVICIO;
-        */
 
-    BEGIN
-        NULL;
+        BEGIN
+            -- Encontrar los servicios mas rapido y mas lento
+            FOR servicio IN servicios LOOP
+                IF tiempo_medio.dias < servicio_mas_rapido_dias THEN
+                    servicio_mas_rapido := servicio.id_servicio;
+                    servicio_mas_rapido_dias := tiempo_medio.dias;
+                    servicio_mas_rapido_idempleado := servicio.id_empleado;
 
-        -- Descomentar una vez se arregle el cursor o dara fallo al compilar,
-        -- elimina la sentencia NULL; anterior, ya que esta puesta por lo mismo
-        /*
-        -- Encontrar los servicios mas rapido y mas lento
-        FOR servicio IN servicios LOOP
-            IF servicio.MEDIA_DIAS < servicio_mas_rapido_horas THEN
-                servicio_mas_rapido := servicio.IDSERVICIO;
-                servicio_mas_rapido_horas := servicio.MEDIA_DIAS;
-                servicio_mas_rapido_idempleado := servicio.IDEMPLEADO;
+                ELSIF tiempo_medio.dias > servicio_mas_lento_dias THEN
+                    servicio_mas_lento := servicio.id_servicio;
+                    servicio_mas_lento_dias := tiempo_medio.dias;
+                    servicio_mas_lento_idempleado := servicio.id_empleado;
 
-            ELSIF servicio.MEDIA_DIAS > servicio_mas_lento_horas THEN
-                servicio_mas_lento := servicio.IDSERVICIO;
-                servicio_mas_lento_horas := servicio.MEDIA_DIAS;
-                servicio_mas_lento_idempleado := servicio.IDEMPLEADO;
+                END IF;
 
-            END IF;
+            END LOOP;
 
-        END LOOP;
+            -- Obtenidos los servicios, se actualizan los sueldos
+            UPDATE AUTORACLE.EMPLEADO
+                SET SUELDOBASE = SUELDOBASE - (0.05 * SUELDOBASE)
+                    WHERE IDEMPLEADO = servicio_mas_lento_idempleado;
 
-        -- Obtenidos los servicios, se actualizan los sueldos
-        UPDATE AUTORACLE.EMPLEADO
-            SET SUELDOBASE = SUELDOBASE - (0.05 * SUELDOBASE)
-                WHERE IDEMPLEADO = servicio_mas_lento_idempleado;
+            UPDATE AUTORACLE.EMPLEADO
+                SET SUELDOBASE = SUELDOBASE + (0.05 * SUELDOBASE)
+                    WHERE IDEMPLEADO = servicio_mas_rapido_idempleado;
 
-        UPDATE AUTORACLE.EMPLEADO
-            SET SUELDOBASE = SUELDOBASE + (0.05 * SUELDOBASE)
-                WHERE IDEMPLEADO = servicio_mas_rapido_idempleado;
+            COMMIT;
+        END;
 
-        COMMIT;
-        */
-    END;
-
-END pkg_autoracle_analisis;
+END pkg_analisis_datos;
 /
 
 
