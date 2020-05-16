@@ -396,17 +396,20 @@ UPDATE AUTORACLE.FACTURA
 
 CREATE OR REPLACE PROCEDURE AUTORACLE.P_CALCULA_FACT AS
     iva_mult NUMBER;
+
     CURSOR tabla IS
         SELECT f.IDFACTURA, f.IVA, p.CODREF, p.PRECIOUNIDADVENTA, p.PRECIOUNIDADCOMPRA
         FROM AUTORACLE.FACTURA f
         JOIN AUTORACLE.CONTIENE c ON c.FACTURA_IDFACTURA = f.IDFACTURA
         JOIN AUTORACLE.PIEZA p ON c.PIEZA_CODREF = p.CODREF;
+
 BEGIN
     FOR fila IN tabla LOOP
         iva_mult := 1 + (fila.IVA / 100); -- el IVA es un factor de crecimiento
+
         UPDATE AUTORACLE.FACTURA
             SET IVA_CALCULADO = IVA_CALCULADO + iva_mult * fila.PRECIOUNIDADVENTA,
-                TOTAL = TOTAL + ((iva_mult * fila.PRECIOUNIDADVENTA) - fila.PRECIOUNIDADCOMPRA)
+                TOTAL = TOTAL + fila.PRECIOUNIDADVENTA
             WHERE IDFACTURA = fila.IDFACTURA;
     END LOOP;
 END;
@@ -763,7 +766,7 @@ CREATE OR REPLACE
                             AND TO_NUMBER(F.anno) = anno;
 
                 UPDATE AUTORACLE.FACTURA
-                    SET DESCUENTO = v_descuento
+                    SET DESCUENTO = v_descuento, TOTAL = TOTAL - (TOTAL * v_descuento/100)
                         WHERE CLIENTE_IDCLIENTE = cliente
                             AND TO_CHAR(FECEMISION, 'YYYY') = TO_CHAR(anno);
 
