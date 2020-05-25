@@ -6,8 +6,6 @@
 -- Activar la opcion de mostrar mensajes por pantalla (1 vez / sesion)
 SET SERVEROUTPUT ON;
 
-
-
 /* [1]
 Modificar el modelo (si es necesario) para almacenar el usuario de Oracle que
 cada empleado o cliente pueda utilizar para conectarse a la base de datos.
@@ -19,6 +17,170 @@ Ademas, habra que crear roles dependiendo del tipo de usuario:
    servicios.
 Los roles se llamaran R_ADMINISTRATIVO, R_MECANICO, R_CLIENTE.
 */
+
+
+/*-- Nueva tabla para almacenar usuarios
+DROP TABLE autoracle.usuario;
+CREATE TABLE autoracle.usuario (
+  idusuario VARCHAR2(16),
+  username VARCHAR2(64) NOT NULL,
+  email VARCHAR2(64) NOT NULL,
+  contrasena VARCHAR2(32) DEFAULT 'defaultPASSWORD',    -- Proteger mas adelante
+  tipo NUMBER(1) NOT NULL,       -- cliente (0), empleado (1) y administrador (2)
+  PRIMARY KEY (idusuario, tipo));
+
+ALTER TABLE autoracle.usuario
+  ADD CONSTRAINT fk_cliente FOREIGN KEY (idusuario) REFERENCES autoracle.cliente(idcliente);
+
+ALTER TABLE autoracle.usuario
+  ADD CONSTRAINT fk_empleado FOREIGN KEY (idusuario) REFERENCES autoracle.empleado(idempleado);
+*/
+
+CREATE OR REPLACE
+  VIEW autoracle.v_clientes_datos AS (
+    SELECT
+      C.idcliente AS "ID",
+      -- U.username AS usuario,
+      C.nombre AS nombre,
+      C.apellido1 AS "PRIMER APELLIDO",
+      C.apellido2 AS "SEGUNDO APELLIDO",
+      C.telefono AS telefono,
+      -- U.email AS email,
+      V.matricula AS matricula,
+      MA.nombre AS marca,
+      MO.nombre AS modelo,
+      V.kilometraje AS kilometros
+
+      FROM autoracle.cliente C
+        INNER JOIN autoracle.vehiculo V ON C.idcliente = V.cliente_idcliente
+        INNER JOIN autoracle.marca MA   ON V.modelo_marca_idmarca = MA.idmarca
+        INNER JOIN autoracle.modelo MO  ON V.modelo_idmodelo = MO.idmodelo
+  );
+
+CREATE OR REPLACE
+    VIEW autoracle.v_cliente_datos AS (
+        SELECT *
+            FROM autoracle.v_clientes
+                WHERE usuario = user
+    );
+
+
+CREATE OR REPLACE
+  VIEW autoracle.v_clientes_servicios AS (
+    SELECT
+      C.idcliente AS "ID",
+      -- U.username AS usuario,
+      C.nombre AS nombre,
+      C.apellido1 AS "PRIMER APELLIDO",
+      C.apellido2 AS "SEGUNDO APELLIDO",
+      C.telefono AS telefono,
+      -- U.email AS email,
+      S.idservicio AS servicio,
+      S.estado AS estado,
+      S.fecapertura AS "FECHA DE APERTURA",
+      S.fecrealizacion AS "FECHA DE REALIZACION",
+      S.fecrecepcion AS "FECHA DE RECEPCION",
+      S.obschapa AS chapa,
+      S.efectividad AS efectividad,
+      S.vehiculo_numbastidor AS vehiculo,
+      V.matricula AS matricula,
+      MA.nombre AS marca,
+      MO.nombre AS modelo,
+      V.kilometraje AS kilometros
+
+      FROM autoracle.cliente C
+        INNER JOIN autoracle.vehiculo V ON C.idcliente = V.cliente_idcliente
+        INNER JOIN autoracle.marca MA   ON V.modelo_marca_idmarca = MA.idmarca
+        INNER JOIN autoracle.modelo MO  ON V.modelo_idmodelo = MO.idmodelo
+        INNER JOIN autoracle.servicio S ON V.numbastidor = S.vehiculo_numbastidor
+  );
+
+CREATE OR REPLACE
+    VIEW v_cliente_servicios AS (
+        SELECT *
+            FROM v_clientes_servicios
+                -- WHERE usuario = user
+    );
+
+
+CREATE OR REPLACE
+  VIEW autoracle.v_empleados_datos AS (
+    SELECT
+      E.idempleado AS "ID",
+      -- U.username AS usuario,
+      E.nombre AS nombre,
+      E.apellido1 AS "PRIMER APELLIDO",
+      E.apellido2 AS "SEGUNDO APELLIDO",
+      -- U.email AS email,
+      E.despedido AS despedido,
+      E.fecentrada AS contratado,
+      E.sueldobase AS "SUELDO BASE",
+      E.horas AS horas,
+      E.puesto AS puesto,
+      E.retenciones AS retenciones,
+      V.identificador AS vacaciones,
+      V.concedido AS concedidas,
+      V.fecentrada AS comienzo,
+      V.fecsalida AS final
+
+      FROM autoracle.empleado E
+        INNER JOIN autoracle.vacaciones V ON E.idempleado = V.empleado_idempleado
+  );
+
+CREATE OR REPLACE
+    VIEW v_empleado_datos AS (
+        SELECT *
+            FROM v_empleados_datos
+                -- WHERE usuario = user
+    );
+
+
+CREATE OR REPLACE
+  VIEW autoracle.v_empleados_servicios AS (
+    SELECT
+      E.idempleado AS "ID",
+      -- U.username AS usuario,
+      E.nombre AS nombre,
+      E.apellido1 AS "PRIMER APELLIDO",
+      E.apellido2 AS "SEGUNDO APELLIDO",
+      -- U.email AS email,
+      S.idservicio AS servicio,
+      S.estado AS "ESTADO DEL SERVICO",
+      S.fecapertura AS "FECHA DE APERTURA",
+      S.fecrealizacion AS "FECHA DE REALIZACION",
+      S.fecrecepcion AS "FECHA DE RECEPCION",
+      S.obschapa AS chapa,
+      S.efectividad AS efectividad,
+      S.vehiculo_numbastidor AS vehiculo,
+      R.motivo AS "MOTIVO DE REPARACION",
+      R.horas AS horas,
+      M.fecproxrevision AS "PROXIMA REVISION",
+      X.estado AS "ESTADO DEL EXAMEN",
+      C.nombre AS categoria,
+      F.idfactura AS factura,
+      F.fecemision AS "FECHA DE EMISION",
+      F.descuento AS descuento,
+      F.iva AS iva,
+      F.total AS "TOTAL (SIN IVA)",
+      F.iva_calculado AS "TOTAL (CON IVA)"
+
+      FROM autoracle.empleado E
+        INNER JOIN autoracle.trabaja T          ON E.idempleado = T.empleado_idempleado
+        INNER JOIN autoracle.servicio S         ON T.servicio_idservicio = S.idservicio
+        INNER JOIN autoracle.reparacion R       ON S.idservicio = R.idservicio
+        INNER JOIN autoracle.mantenimiento M    ON S.idservicio = M.idservicio
+        INNER JOIN autoracle.examen X           ON M.idservicio = X.mantenimiento_idservicio
+        INNER JOIN autoracle.categoria C        ON X.categoria_idcategoria = C.idcategoria
+        INNER JOIN autoracle.factura F          ON E.idempleado = F.empleado_idempleado
+  );
+
+
+CREATE OR REPLACE
+    VIEW v_empleado_servicios AS (
+        SELECT *
+            FROM v_empleados_servicios
+                -- WHERE usuario = user
+    );
 
 
 -- ROLES Y PERMISOS
@@ -33,284 +195,27 @@ CREATE ROLE r_mecanico;
 CREATE ROLE r_cliente;
 
 
--- { permisos para R_ADMINISTRATIVO }
+GRANT SELECT ON autoracle.v_clientes_datos TO r_administrativo;
+GRANT SELECT ON autoracle.v_clientes_servicios TO r_administrativo;
+GRANT SELECT ON autoracle.v_empleados_datos TO r_administrativo;
+GRANT SELECT ON autoracle.v_empleados_servicios TO r_administrativo;
 
-GRANT dba
-    TO R_ADMINISTRATIVO;
+GRANT SELECT ON autoracle.v_empleado_datos TO r_mecanico;
+GRANT SELECT ON autoracle.v_empleado_servicios TO r_mecanico;
+GRANT SELECT ON autoracle.categoria TO r_mecanico;
+GRANT SELECT ON autoracle.cita TO r_mecanico;
+GRANT SELECT ON autoracle.compatible TO r_mecanico;
+GRANT SELECT ON autoracle.compra TO r_mecanico;
+GRANT SELECT ON autoracle.comprafutura TO r_mecanico;
+GRANT SELECT ON autoracle.contiene TO r_mecanico;
+GRANT SELECT ON autoracle.lote TO r_mecanico;
+GRANT SELECT ON autoracle.necesita TO r_mecanico;
+GRANT SELECT ON autoracle.pieza TO r_mecanico;
+GRANT SELECT ON autoracle.provee TO r_mecanico;
+GRANT SELECT ON autoracle.proveedor TO r_mecanico;
 
-GRANT R_ADMINISTRATIVO
-    TO AUTORACLE;
-
-
--- { permisos para R_MECANICO }
-
-GRANT SELECT
-    ON autoracle.empleado
-    TO r_mecanico;
-
-GRANT SELECT
-    ON autoracle.categoria
-    TO r_mecanico;
-
-GRANT SELECT
-    ON autoracle.compatible
-    TO r_mecanico;
-
-GRANT SELECT
-    ON autoracle.examen
-    TO r_mecanico;
-
-GRANT SELECT
-    ON autoracle.mantenimiento
-    TO r_mecanico;
-
-GRANT SELECT
-    ON autoracle.marca
-    TO r_mecanico;
-
-GRANT SELECT
-    ON autoracle.modelo
-    TO r_mecanico;
-
-GRANT SELECT
-    ON autoracle.necesita
-    TO r_mecanico;
-
-GRANT SELECT
-    ON autoracle.pieza
-    TO r_mecanico;
-
-GRANT SELECT
-    ON autoracle.reparacion
-    TO r_mecanico;
-
-GRANT SELECT
-    ON autoracle.requiere
-    TO r_mecanico;
-
-GRANT SELECT
-    ON autoracle.trabaja
-    TO r_mecanico;
-
-GRANT SELECT
-    ON autoracle.vacaciones
-    TO r_mecanico;
-
-
--- { permisos para R_CLIENTE }
-
-GRANT SELECT
-    ON autoracle.cliente
-    TO r_cliente;
-
-GRANT SELECT
-    ON autoracle.cita
-    TO r_mecanico, r_cliente;
-
-GRANT SELECT
-    ON autoracle.factura
-    TO r_mecanico, r_cliente;
-
-GRANT SELECT
-    ON autoracle.servicio
-    TO r_mecanico, r_cliente;
-
-GRANT SELECT
-    ON autoracle.vehiculo
-    TO r_mecanico, r_cliente;
-
-
--- RESTRICCIONES (POLITICAS)
-
--- Politicas para R_MECANICO
-
-/*  Agregamos una politica VPD (ver practica 3 / tema 2) para limitar el acceso
-    a los datos de cada empleado agregamos restricciones a las tablas "EMPLEADO",
-    "VACACIONES", "FACTURA" y "TRABAJA".
-
-    SELECT *
-        FROM ALL_CONSTRAINTS
-            WHERE CONSTRAINT_NAME LIKE '%EMPLEADO%';
-
-    Permite precisar que tablas dependen de EMPLEADO_ID
-*/
-
--- Devuelve un filtro para la clausula WHERE.
-
--- https://www.techonthenet.com/oracle/functions/sys_context.php
-CREATE OR REPLACE
-    FUNCTION AUTORACLE.SOLO_EMPLEADO_ACTUAL_EMPLEADO (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
-        RETURN VARCHAR2 AS
-        BEGIN
-            IF (SYS_CONTEXT('userenv', 'isdba') = 'TRUE') THEN
-                RETURN '';
-            ELSE
-                RETURN 'IDEMPLEADO = ''' || SYS_CONTEXT('userenv', 'session_userid') || '''';
-            END IF;
-        END;
-/
-
--- Devuelve un filtro para la clausula WHERE.
--- https://www.techonthenet.com/oracle/functions/sys_context.php
-CREATE OR REPLACE
-
-    FUNCTION AUTORACLE.SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
-        RETURN VARCHAR2 AS
-        BEGIN
-            IF (SYS_CONTEXT('userenv', 'isdba') = 'TRUE') THEN
-                RETURN '';
-            ELSE
-                RETURN 'EMPLEADO_IDEMPLEADO = ''' || SYS_CONTEXT('userenv', 'session_userid') || '''';
-            END IF;
-        END;
-/
-
-/* Eliminar las politicas de R_MECANICO
-BEGIN
-    DBMS_RLS.DROP_POLICY('AUTORACLE', 'EMPLEADO', 'POL_EMPLEADO_EMPLEADO');
-    DBMS_RLS.DROP_POLICY('AUTORACLE', 'VACACIONES', 'POL_EMPLEADO_VACACIONES');
-    DBMS_RLS.DROP_POLICY('AUTORACLE', 'TRABAJA', 'POL_EMPLEADO_TRABAJA');
-    DBMS_RLS.DROP_POLICY('AUTORACLE', 'FACTURA', 'POL_EMPLEADO_FACTURA');
-END;
-/
-*/
-
-BEGIN
-    DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE',
-        object_name => 'EMPLEADO',
-        policy_name => 'POL_EMPLEADO_EMPLEADO',
-        function_schema => 'AUTORACLE',
-        policy_function => 'SOLO_EMPLEADO_ACTUAL_EMPLEADO',
-        statement_types => 'SELECT'
-    );
-
-    DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE',
-        object_name => 'VACACIONES',
-        policy_name => 'POL_EMPLEADO_VACACIONES',
-        function_schema => 'AUTORACLE',
-        policy_function => 'SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC',
-        statement_types => 'SELECT'
-    );
-
-    DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE',
-        object_name => 'TRABAJA',
-        policy_name => 'POL_EMPLEADO_TRABAJA',
-        function_schema => 'AUTORACLE',
-        policy_function => 'SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC',
-        statement_types => 'SELECT'
-    );
-
-    DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE',
-        object_name => 'FACTURA',
-        policy_name => 'POL_EMPLEADO_FACTURA',
-        function_schema => 'AUTORACLE',
-        policy_function => 'SOLO_EMPLEADO_ACTUAL_VAC_TRA_FAC',
-        statement_types => 'SELECT'
-    );
-END;
-/
-
-
--- Restricciones (politicas) para R_CLIENTE
-
-/*  Agregamos una politica VPD (ver practica 3 / tema 2) para limitar el acceso
-    a los datos de cada cliente agregamos restricciones a las tablas "CLIENTE",
-    "CITA", "FACTURA" y "VEHICULO".
-
-    SELECT *
-        FROM ALL_CONSTRAINTS
-            WHERE CONSTRAINT_NAME LIKE '%CLIENTE%';
-
-    Permite precisar que tablas dependen de EMPLEADO_ID.
-*/
-
--- Devuelve un filtro para la clausula WHERE.
--- https://www.techonthenet.com/oracle/functions/sys_context.php
-CREATE OR REPLACE
-    FUNCTION AUTORACLE.SOLO_CLIENTE_ACTUAL_CLIENTE (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
-        RETURN VARCHAR2 AS
-        BEGIN
-            IF (SYS_CONTEXT('userenv', 'isdba') = 'TRUE') THEN
-                RETURN '';
-            ELSE
-                RETURN 'IDCLIENTE = ''' || SYS_CONTEXT('userenv', 'session_userid') || '''';
-            END IF;
-        END;
-/
-
--- Devuelve un filtro para la clausula WHERE.
--- https://www.techonthenet.com/oracle/functions/sys_context.php
-CREATE OR REPLACE
-    FUNCTION AUTORACLE.SOLO_CLIENTE_ACTUAL_CITA_VEHIC_FAC (p_esquema IN VARCHAR2, p_objeto IN VARCHAR2)
-        RETURN VARCHAR2 AS
-        BEGIN
-            IF (SYS_CONTEXT('userenv', 'isdba') = 'TRUE') THEN
-                RETURN '';
-            ELSE
-                RETURN 'CLIENTE_IDCLIENTE = ''' || SYS_CONTEXT('userenv', 'session_userid') || '''';
-            END IF;
-        END;
-/
-
-
-/* Eliminar las policias de R_CLIENTE
-BEGIN
-    DBMS_RLS.DROP_POLICY('AUTORACLE', 'CLIENTE', 'POL_CLIENTE_CLIENTE');
-    DBMS_RLS.DROP_POLICY('AUTORACLE', 'CITA', 'POL_CLIENTE_CITA');
-    DBMS_RLS.DROP_POLICY('AUTORACLE', 'VEHICULO', 'POL_CLIENTE_VEHICULO');
-    DBMS_RLS.DROP_POLICY('AUTORACLE', 'FACTURA', 'POL_CLIENTE_FACTURA');
-END;
-/
-*/
-
-BEGIN
-    DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE',
-        object_name => 'CLIENTE',
-        policy_name => 'POL_CLIENTE_CLIENTE',
-        function_schema => 'AUTORACLE',
-        policy_function => 'SOLO_CLIENTE_ACTUAL_CLIENTE',
-        statement_types => 'SELECT'
-    );
-
-    DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE',
-        object_name => 'CITA',
-        policy_name => 'POL_CLIENTE_CITA',
-        function_schema => 'AUTORACLE',
-        policy_function => 'SOLO_CLIENTE_ACTUAL_CITA_VEHIC_FAC',
-        statement_types => 'SELECT'
-    );
-
-    DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE',
-        object_name => 'VEHICULO',
-        policy_name => 'POL_CLIENTE_VEHICULO',
-        function_schema => 'AUTORACLE',
-        policy_function => 'SOLO_CLIENTE_ACTUAL_CITA_VEHIC_FAC',
-        statement_types => 'SELECT'
-    );
-
-    DBMS_RLS.ADD_POLICY (
-        object_schema => 'AUTORACLE',
-        object_name => 'FACTURA',
-        policy_name => 'POL_CLIENTE_FACTURA',
-        function_schema => 'AUTORACLE',
-        policy_function => 'SOLO_CLIENTE_ACTUAL_CITA_VEHIC_FAC',
-        statement_types => 'SELECT'
-    );
-END;
-/
-
--- Para comprobar que todas las politicas funcionan
-SELECT * FROM AUTORACLE.CLIENTE;  -- { desde SYSTEM }
-SELECT * FROM AUTORACLE.CLIENTE;  -- { desde USUARIO1, cuyo ID se asocia a un cliente previamente }
-SELECT * FROM AUTORACLE.EMPLEADO; -- { desde AUTORACLE, que es ABD }
-SELECT * FROM AUTORACLE.EMPLEADO; -- { desde USUARIO2, cuyo ID se asocia a un empleado previamente }
+GRANT SELECT ON autoracle.v_cliente_datos TO r_cliente;
+GRANT SELECT ON autoracle.v_cliente_servicios TO r_cliente;
 
 
 
@@ -798,7 +703,7 @@ CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
     PROCEDURE PR_CREAR_EMPLEADO(nombre EMPLEADO.NOMBRE%TYPE, ap EMPLEADO.APELLIDO1%TYPE);
     PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE);
     PROCEDURE PR_MODIFICAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE, nom EMPLEADO.NOMBRE%TYPE,
-                ap1 EMPLEADO.APELLIDO1%TYPE, ap2 EMPLEADO.APELLIDO2%TYPE, 
+                ap1 EMPLEADO.APELLIDO1%TYPE, ap2 EMPLEADO.APELLIDO2%TYPE,
                 fec EMPLEADO.FECENTRADA%TYPE, des EMPLEADO.DESPEDIDO%TYPE,
                 sueldo EMPLEADO.SUELDOBASE%TYPE, horas EMPLEADO.HORAS%TYPE,
                 pos EMPLEADO.PUESTO%TYPE,  ret EMPLEADO.RETENCIONES%TYPE );
@@ -806,29 +711,29 @@ CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
     PROCEDURE PR_DESBLOQUEAR_USUARIO(nom EMPLEADO.NOMBRE%TYPE );
     PROCEDURE PR_BLOQUEAR_TODOS_EMPLEADOS;
     PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS;
-    
+
 END;
 /
 
 CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
-    
+
     PROCEDURE PR_CREAR_EMPLEADO(nombre EMPLEADO.NOMBRE%TYPE, ap EMPLEADO.APELLIDO1%TYPE) IS
-    
+
     identificacion NUMBER;
-    
+
     sentencia VARCHAR2(500);
 
 BEGIN
     SELECT sec_idempleado.nextval INTO identificacion from dual;
      INSERT INTO EMPLEADO(IDEMPLEADO, NOMBRE, APELLIDO1, FECENTRADA, DESPEDIDO, SUELDOBASE)
         VALUES(identificacion, nombre, ap, sysdate, 0, 1500);
-    sentencia := 'CREATE USER ' || nombre || ' IDENTIFIED BY ' || nombre || ' 
+    sentencia := 'CREATE USER ' || nombre || ' IDENTIFIED BY ' || nombre || '
     DEFAULT TABLESPACE TS_AUTORACLE';
     DBMS_OUTPUT.PUT_LINE(sentencia);
     EXECUTE IMMEDIATE sentencia;
 END;
-    
-    
+
+
     PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE) IS
     usuario EMPLEADO.NOMBRE%TYPE;
     sentencia VARCHAR2(500);
@@ -838,19 +743,19 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE(sentencia);
     EXECUTE IMMEDIATE sentencia;
     delete FROM empleado
-    where IDEMPLEADO = ide;  
-    
+    where IDEMPLEADO = ide;
+
 END;
-    
+
     PROCEDURE PR_MODIFICAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE, nom EMPLEADO.NOMBRE%TYPE,
-                ap1 EMPLEADO.APELLIDO1%TYPE, ap2 EMPLEADO.APELLIDO2%TYPE, 
+                ap1 EMPLEADO.APELLIDO1%TYPE, ap2 EMPLEADO.APELLIDO2%TYPE,
                 fec EMPLEADO.FECENTRADA%TYPE, des EMPLEADO.DESPEDIDO%TYPE,
                 sueldo EMPLEADO.SUELDOBASE%TYPE, horas EMPLEADO.HORAS%TYPE,
-                pos EMPLEADO.PUESTO%TYPE,  ret EMPLEADO.RETENCIONES%TYPE ) IS         
+                pos EMPLEADO.PUESTO%TYPE,  ret EMPLEADO.RETENCIONES%TYPE ) IS
  des_mal EXCEPTION;
 
 BEGIN
-    IF ( ((des > 1) OR (des < 0) )) then 
+    IF ( ((des > 1) OR (des < 0) )) then
         RAISE des_mal;
     END IF;
 
@@ -860,9 +765,9 @@ BEGIN
     DESPEDIDO = des , SUELDOBASE = sueldo ,
     HORAS = horas, PUESTO = pos , RETENCIONES = ret
     WHERE IDEMPLEADO = ide;
-        EXCEPTION 
+        EXCEPTION
          WHEN des_mal THEN
-         DBMS_OUTPUT.PUT_LINE('Valor de "Despido" incorrecto (ingrese 0 o 1)'); 
+         DBMS_OUTPUT.PUT_LINE('Valor de "Despido" incorrecto (ingrese 0 o 1)');
          WHEN OTHERS THEN
          DBMS_OUTPUT.PUT_LINE('Parametros incorrectos.
             Introduce (IDEmpleado, Despido, Sueldo Base, Puesto, Horas, Retenciones)');
@@ -877,7 +782,7 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE(sentencia);
     EXECUTE IMMEDIATE sentencia;
 END;
-    
+
     PROCEDURE PR_DESBLOQUEAR_USUARIO(nom EMPLEADO.NOMBRE%TYPE ) AS
     usuario ALL_USERS.USERNAME%TYPE;
     sentencia VARCHAR2(500);
@@ -899,7 +804,7 @@ BEGIN
     EXECUTE IMMEDIATE sentencia;
     END LOOP;
 END;
-    
+
 PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS AS
 sentencia VARCHAR(500);
 CURSOR empleados IS
