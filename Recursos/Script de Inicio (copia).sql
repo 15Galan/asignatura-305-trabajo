@@ -1,24 +1,28 @@
--- Reinicio del espacio de tablas del trabajo
+-- Borrar el espacio de tablas y el usuario (limpieza)
+DROP USER autoracle
+    CASCADE;
+
 DROP TABLESPACE ts_autoracle
     INCLUDING CONTENTS;
 
+
+-- Crear el espacio de tablas y el usuario para alojar la Base de Datos
 CREATE TABLESPACE ts_autoracle
     DATAFILE 'C:\USERS\APP\ALUMNOS\ORADATA\ORCL\autoracle.dbf'
     SIZE 16M
-    AUTOEXTEND ON NEXT 200K
-    MAXSIZE 128M;
-
-
--- Reinicio del usuario 'autoracle'
-DROP USER autoracle
-    CASCADE;
+    AUTOEXTEND ON NEXT 2M;
 
 CREATE USER autoracle
     IDENTIFIED BY autoracle
     DEFAULT TABLESPACE ts_autoracle
     QUOTA UNLIMITED ON ts_autoracle;
 
-GRANT CONNECT, CREATE TABLE, CREATE VIEW, CREATE MATERIALIZED VIEW
+GRANT
+    CREATE SESSION,
+    CREATE TABLE,
+    CREATE VIEW,
+    CREATE MATERIALIZED VIEW,
+    CREATE PROCEDURE
     TO AUTORACLE;
 
 
