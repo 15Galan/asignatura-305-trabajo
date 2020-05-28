@@ -693,126 +693,262 @@ CREATE SEQUENCE sec_idempleado
     INCREMENT BY 1;
 
 CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
-    PROCEDURE PR_CREAR_EMPLEADO(nombre EMPLEADO.NOMBRE%TYPE, ap EMPLEADO.APELLIDO1%TYPE);
-    PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE);
-    PROCEDURE PR_MODIFICAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE, nom EMPLEADO.NOMBRE%TYPE,
-                ap1 EMPLEADO.APELLIDO1%TYPE, ap2 EMPLEADO.APELLIDO2%TYPE,
-                fec EMPLEADO.FECENTRADA%TYPE, des EMPLEADO.DESPEDIDO%TYPE,
-                sueldo EMPLEADO.SUELDOBASE%TYPE, horas EMPLEADO.HORAS%TYPE,
-                pos EMPLEADO.PUESTO%TYPE,  ret EMPLEADO.RETENCIONES%TYPE );
-    PROCEDURE PR_BLOQUEAR_USUARIO(nom EMPLEADO.NOMBRE%TYPE );
-    PROCEDURE PR_DESBLOQUEAR_USUARIO(nom EMPLEADO.NOMBRE%TYPE );
+    PROCEDURE PR_CREAR_EMPLEADO(
+        nombre EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE );
+    PROCEDURE PR_BORRAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE );
+    PROCEDURE PR_MODIFICAR_EMPLEADO(
+        ide EMPLEADO.IDEMPLEADO%TYPE,
+        nom EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE,
+        fec EMPLEADO.FECENTRADA%TYPE,
+        des EMPLEADO.DESPEDIDO%TYPE,
+        sueldo EMPLEADO.SUELDOBASE%TYPE,
+        horas EMPLEADO.HORAS%TYPE,
+        pos EMPLEADO.PUESTO%TYPE, 
+        ret EMPLEADO.RETENCIONES%TYPE );
+    PROCEDURE PR_BLOQUEAR_USUARIO(
+        nombre EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE );
+    PROCEDURE PR_DESBLOQUEAR_USUARIO(
+        nombre EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE );
     PROCEDURE PR_BLOQUEAR_TODOS_EMPLEADOS;
     PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS;
-
 END;
 /
 
 CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
 
-    PROCEDURE PR_CREAR_EMPLEADO(nombre EMPLEADO.NOMBRE%TYPE, ap EMPLEADO.APELLIDO1%TYPE) IS
+    PROCEDURE PR_CREAR_EMPLEADO(
+        nombre EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE ) 
+    AS
+        identificacion NUMBER := sec_idempleado.NEXTVAL;
+        username ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
+        sentencia VARCHAR2(500) := 'CREATE USER ' ||
+                                    username ||
+                                    ' IDENTIFIED BY ' ||
+                                    username ||
+                                    ' DEFAULT TABLESPACE TS_AUTORACLE';
+    BEGIN
+        INSERT INTO EMPLEADO(IDEMPLEADO, NOMBRE, APELLIDO1, APELLIDO2, FECENTRADA, DESPEDIDO, SUELDOBASE)
+            VALUES(identificacion, nombre, ap1, ap2, sysdate, 0, 1500);
 
-    identificacion NUMBER;
+        DBMS_OUTPUT.PUT_LINE(sentencia);
+        DBMS_OUTPUT.PUT_LINE('ID: ' || identificacion);
 
-    sentencia VARCHAR2(500);
-
-BEGIN
-    SELECT sec_idempleado.nextval INTO identificacion from dual;
-     INSERT INTO EMPLEADO(IDEMPLEADO, NOMBRE, APELLIDO1, FECENTRADA, DESPEDIDO, SUELDOBASE)
-        VALUES(identificacion, nombre, ap, sysdate, 0, 1500);
-    sentencia := 'CREATE USER ' || nombre || ' IDENTIFIED BY ' || nombre || '
-    DEFAULT TABLESPACE TS_AUTORACLE';
-    DBMS_OUTPUT.PUT_LINE(sentencia);
-    EXECUTE IMMEDIATE sentencia;
-END;
+        EXECUTE IMMEDIATE sentencia;
+    END;
 
 
     PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE) IS
-    usuario EMPLEADO.NOMBRE%TYPE;
-    sentencia VARCHAR2(500);
-BEGIN
-    SELECT NOMBRE INTO usuario FROM EMPLEADO WHERE IDEMPLEADO = ide;
-    sentencia := 'DROP USER ' || usuario || ' CASCADE';
-    DBMS_OUTPUT.PUT_LINE(sentencia);
-    EXECUTE IMMEDIATE sentencia;
-    delete FROM empleado
-    where IDEMPLEADO = ide;
+        usuario EMPLEADO.NOMBRE%TYPE;
+        sentencia VARCHAR2(500);
+    BEGIN
+        SELECT UPPER(NOMBRE) || '_' || UPPER(APELLIDO1) || '_' || UPPER(APELLIDO2)
+            INTO usuario
+            FROM EMPLEADO
+            WHERE IDEMPLEADO = ide;
 
-END;
+        sentencia := 'DROP USER ' || usuario || ' CASCADE';
 
-    PROCEDURE PR_MODIFICAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE, nom EMPLEADO.NOMBRE%TYPE,
-                ap1 EMPLEADO.APELLIDO1%TYPE, ap2 EMPLEADO.APELLIDO2%TYPE,
-                fec EMPLEADO.FECENTRADA%TYPE, des EMPLEADO.DESPEDIDO%TYPE,
-                sueldo EMPLEADO.SUELDOBASE%TYPE, horas EMPLEADO.HORAS%TYPE,
-                pos EMPLEADO.PUESTO%TYPE,  ret EMPLEADO.RETENCIONES%TYPE ) IS
- des_mal EXCEPTION;
+        DBMS_OUTPUT.PUT_LINE(sentencia);
+        EXECUTE IMMEDIATE sentencia;
+        
+        DELETE FROM EMPLEADO
+            WHERE IDEMPLEADO = ide;
+    END;
 
-BEGIN
-    IF ( ((des > 1) OR (des < 0) )) then
-        RAISE des_mal;
-    END IF;
 
-    UPDATE EMPLEADO
-    SET NOMBRE = nom, APELLIDO1 = ap1,
-    APELLIDO2 = ap2, FECENTRADA = fec,
-    DESPEDIDO = des , SUELDOBASE = sueldo ,
-    HORAS = horas, PUESTO = pos , RETENCIONES = ret
-    WHERE IDEMPLEADO = ide;
-        EXCEPTION
-         WHEN des_mal THEN
-         DBMS_OUTPUT.PUT_LINE('Valor de "Despido" incorrecto (ingrese 0 o 1)');
-         WHEN OTHERS THEN
-         DBMS_OUTPUT.PUT_LINE('Parametros incorrectos.
+    PROCEDURE PR_MODIFICAR_EMPLEADO(
+        ide EMPLEADO.IDEMPLEADO%TYPE,
+        nom EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE,
+        fec EMPLEADO.FECENTRADA%TYPE,
+        des EMPLEADO.DESPEDIDO%TYPE,
+        sueldo EMPLEADO.SUELDOBASE%TYPE,
+        horas EMPLEADO.HORAS%TYPE,
+        pos EMPLEADO.PUESTO%TYPE, 
+        ret EMPLEADO.RETENCIONES%TYPE )
+    AS
+        des_mal EXCEPTION;
+    BEGIN
+        IF ( (des > 1) OR (des < 0) ) then
+            RAISE des_mal;
+        END IF;
+
+        UPDATE EMPLEADO SET
+            NOMBRE = nom,
+            APELLIDO1 = ap1,
+            APELLIDO2 = ap2,
+            FECENTRADA = fec,
+            DESPEDIDO = des,
+            SUELDOBASE = sueldo,
+            HORAS = horas,
+            PUESTO = pos,
+            RETENCIONES = ret
+        WHERE
+            IDEMPLEADO = ide;
+
+    EXCEPTION
+        WHEN des_mal THEN
+            DBMS_OUTPUT.PUT_LINE('Valor de "Despido" incorrecto (ingrese 0 o 1)');
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Parametros incorrectos.
             Introduce (IDEmpleado, Despido, Sueldo Base, Puesto, Horas, Retenciones)');
-END;
+    END;
 
-    PROCEDURE PR_BLOQUEAR_USUARIO(nom EMPLEADO.NOMBRE%TYPE ) AS
-    usuario ALL_USERS.USERNAME%TYPE;
-    sentencia VARCHAR2(500);
-BEGIN
-    usuario := UPPER(nom);
-    sentencia := 'ALTER USER ' || usuario || ' ACCOUNT LOCK;' ;
-    DBMS_OUTPUT.PUT_LINE(sentencia);
-    EXECUTE IMMEDIATE sentencia;
-END;
+    -- Deberia de ser con (Nombre, Ap1, Ap2) o con (Ide) ????
+    PROCEDURE PR_BLOQUEAR_USUARIO(
+        nombre EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE )
+    AS
+        usuario ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
+        sentencia VARCHAR2(500) := 'ALTER USER ' || usuario || ' ACCOUNT LOCK';
+    BEGIN
+        DBMS_OUTPUT.PUT_LINE(sentencia);
+        EXECUTE IMMEDIATE sentencia;
+    END;
 
-    PROCEDURE PR_DESBLOQUEAR_USUARIO(nom EMPLEADO.NOMBRE%TYPE ) AS
-    usuario ALL_USERS.USERNAME%TYPE;
-    sentencia VARCHAR2(500);
-BEGIN
-    usuario := UPPER(nom);
-    sentencia := 'ALTER USER ' || usuario || ' ACCOUNT UNLOCK;' ;
-    DBMS_OUTPUT.PUT_LINE(sentencia);
-    EXECUTE IMMEDIATE sentencia;
-END;
+    -- Deberia de ser con (Nombre, Ap1, Ap2) o con (Ide) ????
+    PROCEDURE PR_DESBLOQUEAR_USUARIO(
+        nombre EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE )
+    AS
+        usuario ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
+        sentencia VARCHAR2(500) := 'ALTER USER ' || usuario || ' ACCOUNT UNLOCK';
+    BEGIN
+        DBMS_OUTPUT.PUT_LINE(sentencia);
+        EXECUTE IMMEDIATE sentencia;
+    END;
 
-PROCEDURE PR_BLOQUEAR_TODOS_EMPLEADOS AS
-sentencia VARCHAR(500);
-CURSOR empleados IS
-    SELECT NOMBRE FROM EMPLEADO;
 
-BEGIN
-    FOR nom IN empleados LOOP
-    sentencia := 'ALTER USER ' || UPPER(nom.NOMBRE) || ' ACCOUNT LOCK';
-    EXECUTE IMMEDIATE sentencia;
-    END LOOP;
-END;
+    PROCEDURE PR_BLOQUEAR_TODOS_EMPLEADOS AS
+        sentencia VARCHAR(500);
+        CURSOR empleados IS
+            SELECT UPPER(NOMBRE) || '_' || UPPER(APELLIDO1) || '_' || UPPER(APELLIDO2) AS USUARIO
+            FROM EMPLEADO;
+    BEGIN
+        FOR emp IN empleados LOOP
+            sentencia := 'ALTER USER ' || emp.USUARIO || ' ACCOUNT LOCK';
+            EXECUTE IMMEDIATE sentencia;
+        END LOOP;
+    END;
 
-PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS AS
-sentencia VARCHAR(500);
-CURSOR empleados IS
-    SELECT NOMBRE FROM EMPLEADO;
 
-BEGIN
-    FOR nom IN empleados LOOP
-    sentencia := 'ALTER USER ' || UPPER(nom.NOMBRE) || ' ACCOUNT UNLOCK';
-    EXECUTE IMMEDIATE sentencia;
-    END LOOP;
-END;
-
+    PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS AS
+        sentencia VARCHAR(500);
+        CURSOR empleados IS
+            SELECT UPPER(NOMBRE) || '_' || UPPER(APELLIDO1) || '_' || UPPER(APELLIDO2) AS USUARIO
+            FROM EMPLEADO;
+    BEGIN
+        FOR emp IN empleados LOOP
+            sentencia := 'ALTER USER ' || emp.USUARIO || ' ACCOUNT UNLOCK';
+            EXECUTE IMMEDIATE sentencia;
+        END LOOP;
+    END;
 END;
 /
 
+-------------------------------------------
+-------------------------------------------
+GRANT DROP USER, ALTER USER, CREATE USER TO AUTORACLE; -- { desde SYSTEM }
+
+-- datos incorrectos en tabla EMPLEADO
+UPDATE EMPLEADO
+    SET APELLIDO2 = 'Bribon'
+    WHERE NOMBRE = 'Felipe';
+    
+UPDATE EMPLEADO
+    SET APELLIDO2 = 'Rubalcaba'
+    WHERE NOMBRE = 'Miguel';
+    
+UPDATE EMPLEADO
+    SET APELLIDO2 = 'Bribon'
+    WHERE NOMBRE = 'Lola';
+
+BEGIN
+    -- source: https://www.vortexmag.net/12-portugueses-conhecidos-em-todo-o-mundo/
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Joao', 'Pessoa', 'DaSilva');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Amalia', 'Pessoa', 'Rodrigues');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Vasco', 'Pessoa', 'DaGama');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Jose', 'Pessoa', 'Mourinho');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Sara', 'Pessoa', 'Sampaio');
+END;
+/
+
+BEGIN
+    PKG_GESTION_EMPLEADOS.PR_MODIFICAR_EMPLEADO(
+        sec_idempleado.CURRVAL, -- el ID del ultimo empleado creado
+        'Sara',
+        'Pessoa',
+        'Sampaio',
+        sysdate,
+        1
+    ) -- Tiene que dar error
+END;
+/
+
+BEGIN
+    PKG_GESTION_EMPLEADOS.PR_MODIFICAR_EMPLEADO(
+        sec_idempleado.CURRVAL,
+        'Sara',
+        'Pessoa',
+        'Sampaio',
+        sysdate,
+        1,
+        0,
+        0,
+        'PreZidenta',
+        0
+    )
+END;
+/
+
+BEGIN
+    PKG_GESTION_EMPLEADOS.PR_BLOQUEAR_USUARIO('Sara', 'Pessoa', 'Sampaio');
+END;
+/
+
+BEGIN
+    PKG_GESTION_EMPLEADOS.PR_DESBLOQUEAR_USUARIO('Sara', 'Pessoa', 'Sampaio');
+END;
+/
+
+BEGIN
+    -- no funcionara si algun empleado en la tabla EMPLEADO no tiene usuario creado :(
+    PKG_GESTION_EMPLEADOS.PR_BLOQUEAR_TODOS_EMPLEADOS;
+END;
+/
+
+BEGIN
+    -- no funcionara si algun empleado en la tabla EMPLEADO no tiene usuario creado :(
+    PKG_GESTION_EMPLEADOS.PR_DESBLOQUEAR_TODOS_EMPLEADOS;
+END;
+/
+
+BEGIN
+    PKG_GESTION_EMPLEADOS.PR_BORRAR_EMPLEADO(sec_idempleado.CURRVAL);
+END;
+/
+BEGIN
+    -- source: https://www.vortexmag.net/12-portugueses-conhecidos-em-todo-o-mundo/
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Joao', 'Pessoa', 'DaSilva');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Amalia', 'Pessoa', 'Rodrigues');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Vasco', 'Pessoa', 'DaGama');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Jose', 'Pessoa', 'Mourinho');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Sara', 'Pessoa', 'Sampaio');
+END;
+/
 
 /* [8]
 Escribir un trigger que cuando se eliminen los datos de un cliente
