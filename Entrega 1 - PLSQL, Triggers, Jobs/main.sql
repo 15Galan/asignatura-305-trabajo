@@ -20,186 +20,30 @@ Los roles se llamaran R_ADMINISTRATIVO, R_MECANICO, R_CLIENTE.
 
 -- Modificaciones de tablas existentes
 ALTER TABLE autoracle.cliente
-    MODIFY email VARCHAR2(64);
+    MODIFY email UNIQUE;
 
 ALTER TABLE autoracle.cliente
-    ADD usuario VARCHAR2(32);
+    ADD usuario VARCHAR2(32) UNIQUE;
 
 ALTER TABLE autoracle.empleado
-    ADD email VARCHAR2(64)
-    ADD usuario VARCHAR2(32);
-
-
-CREATE OR REPLACE
-    VIEW autoracle.v_clientes_datos AS (
-        SELECT
-            C.idcliente AS "ID",
-            C.usuario AS usuario,
-            C.nombre AS nombre,
-            C.apellido1 AS "PRIMER APELLIDO",
-            C.apellido2 AS "SEGUNDO APELLIDO",
-            C.telefono AS telefono,
-            C.email AS email,
-            V.matricula AS matricula,
-            MA.nombre AS marca,
-            MO.nombre AS modelo,
-            V.kilometraje AS kilometros
-
-            FROM autoracle.cliente C
-                INNER JOIN autoracle.vehiculo V ON C.idcliente = V.cliente_idcliente
-                INNER JOIN autoracle.marca MA   ON V.modelo_marca_idmarca = MA.idmarca
-                INNER JOIN autoracle.modelo MO  ON V.modelo_idmodelo = MO.idmodelo
-      );
-
-CREATE OR REPLACE
-    VIEW autoracle.v_cliente_datos AS (
-        SELECT *
-            FROM autoracle.v_clientes_datos
-                WHERE usuario = user
-    );
-
-
-CREATE OR REPLACE
-    VIEW autoracle.v_clientes_servicios AS (
-        SELECT
-        C.idcliente AS "ID",
-        C.usuario AS usuario,
-        C.nombre AS nombre,
-        C.apellido1 AS "PRIMER APELLIDO",
-        C.apellido2 AS "SEGUNDO APELLIDO",
-        C.telefono AS telefono,
-        C.email AS email,
-        S.idservicio AS servicio,
-        S.estado AS estado,
-        S.fecapertura AS "FECHA DE APERTURA",
-        S.fecrealizacion AS "FECHA DE REALIZACION",
-        S.fecrecepcion AS "FECHA DE RECEPCION",
-        S.obschapa AS chapa,
-        S.efectividad AS efectividad,
-        S.vehiculo_numbastidor AS vehiculo,
-        V.matricula AS matricula,
-        MA.nombre AS marca,
-        MO.nombre AS modelo,
-        V.kilometraje AS kilometros
-
-        FROM autoracle.cliente C
-            INNER JOIN autoracle.vehiculo V ON C.idcliente = V.cliente_idcliente
-            INNER JOIN autoracle.marca MA   ON V.modelo_marca_idmarca = MA.idmarca
-            INNER JOIN autoracle.modelo MO  ON V.modelo_idmodelo = MO.idmodelo
-            INNER JOIN autoracle.servicio S ON V.numbastidor = S.vehiculo_numbastidor
-  );
-
-CREATE OR REPLACE
-    VIEW autoracle.v_cliente_servicios AS (
-        SELECT *
-            FROM autoracle.v_clientes_servicios
-                WHERE usuario = user
-    );
-
-
-CREATE OR REPLACE
-    VIEW autoracle.v_empleados_datos AS (
-        SELECT
-            E.idempleado AS "ID",
-            E.usuario AS usuario,
-            E.nombre AS nombre,
-            E.apellido1 AS "PRIMER APELLIDO",
-            E.apellido2 AS "SEGUNDO APELLIDO",
-            E.email AS email,
-            E.despedido AS despedido,
-            E.fecentrada AS contratado,
-            E.sueldobase AS "SUELDO BASE",
-            E.horas AS horas,
-            E.puesto AS puesto,
-            E.retenciones AS retenciones,
-            V.identificador AS vacaciones,
-            V.concedido AS concedidas,
-            V.fecentrada AS comienzo,
-            V.fecsalida AS final
-
-        FROM autoracle.empleado E
-            INNER JOIN autoracle.vacaciones V ON E.idempleado = V.empleado_idempleado
-  );
-
-CREATE OR REPLACE
-    VIEW autoracle.v_empleado_datos AS (
-        SELECT *
-            FROM autoracle.v_empleados_datos
-                WHERE usuario = user
-    );
-
-
-CREATE OR REPLACE
-    VIEW autoracle.v_empleados_servicios AS (
-        SELECT
-            E.idempleado AS "ID",
-            E.usuario AS usuario,
-            E.nombre AS nombre,
-            E.apellido1 AS "PRIMER APELLIDO",
-            E.apellido2 AS "SEGUNDO APELLIDO",
-            E.email AS email,
-            S.idservicio AS servicio,
-            S.estado AS "ESTADO DEL SERVICO",
-            S.fecapertura AS "FECHA DE APERTURA",
-            S.fecrealizacion AS "FECHA DE REALIZACION",
-            S.fecrecepcion AS "FECHA DE RECEPCION",
-            S.obschapa AS chapa,
-            S.efectividad AS efectividad,
-            S.vehiculo_numbastidor AS vehiculo,
-            R.motivo AS "MOTIVO DE REPARACION",
-            R.horas AS horas,
-            M.fecproxrevision AS "PROXIMA REVISION",
-            X.estado AS "ESTADO DEL EXAMEN",
-            C.nombre AS categoria,
-            F.idfactura AS factura,
-            F.fecemision AS "FECHA DE EMISION",
-            F.descuento AS descuento,
-            F.iva AS iva,
-            F.total AS "TOTAL (SIN IVA)",
-            F.iva_calculado AS "TOTAL (CON IVA)"
-
-            FROM autoracle.empleado E
-                INNER JOIN autoracle.trabaja T          ON E.idempleado = T.empleado_idempleado
-                INNER JOIN autoracle.servicio S         ON T.servicio_idservicio = S.idservicio
-                INNER JOIN autoracle.reparacion R       ON S.idservicio = R.idservicio
-                INNER JOIN autoracle.mantenimiento M    ON S.idservicio = M.idservicio
-                INNER JOIN autoracle.examen X           ON M.idservicio = X.mantenimiento_idservicio
-                INNER JOIN autoracle.categoria C        ON X.categoria_idcategoria = C.idcategoria
-                INNER JOIN autoracle.factura F          ON E.idempleado = F.empleado_idempleado
-  );
-
-CREATE OR REPLACE
-    VIEW autoracle.v_empleado_servicios AS (
-        SELECT *
-            FROM autoracle.v_empleados_servicios
-                WHERE usuario = user
-    );
+    ADD email VARCHAR2(64) UNIQUE
+    ADD usuario VARCHAR2(32) UNIQUE;
 
 
 -- Roles y permisos
-/*
 DROP ROLE r_administrativo;
 DROP ROLE r_mecanico;
 DROP ROLE r_cliente;
-*/
+
 
 CREATE ROLE r_administrativo;
 CREATE ROLE r_mecanico;
 CREATE ROLE r_cliente;
 
-
-GRANT SELECT ON autoracle.v_clientes_datos TO r_administrativo;
-GRANT SELECT ON autoracle.v_clientes_servicios TO r_administrativo;
-GRANT SELECT ON autoracle.v_empleados_datos TO r_administrativo;
-GRANT SELECT ON autoracle.v_empleados_servicios TO r_administrativo;
-
-GRANT SELECT ON autoracle.v_empleado_datos TO r_mecanico;
-GRANT SELECT ON autoracle.v_empleado_servicios TO r_mecanico;
 GRANT SELECT ON autoracle.categoria TO r_mecanico;
 GRANT SELECT ON autoracle.cita TO r_mecanico;
 GRANT SELECT ON autoracle.compatible TO r_mecanico;
 GRANT SELECT ON autoracle.compra TO r_mecanico;
-GRANT SELECT ON autoracle.compra_futura TO r_mecanico;
 GRANT SELECT ON autoracle.contiene TO r_mecanico;
 GRANT SELECT ON autoracle.lote TO r_mecanico;
 GRANT SELECT ON autoracle.necesita TO r_mecanico;
@@ -207,8 +51,7 @@ GRANT SELECT ON autoracle.pieza TO r_mecanico;
 GRANT SELECT ON autoracle.provee TO r_mecanico;
 GRANT SELECT ON autoracle.proveedor TO r_mecanico;
 
-GRANT SELECT ON autoracle.v_cliente_datos TO r_cliente;
-GRANT SELECT ON autoracle.v_cliente_servicios TO r_cliente;
+-- Al final del script se generan vistas para los roles
 
 
 
@@ -227,6 +70,9 @@ CREATE TABLE autoracle.COMPRA_FUTURA (
 	EMAIL VARCHAR2(64 BYTE),
     CODREF_PIEZA NUMBER(*, 0) UNIQUE,
     CANTIDAD NUMBER(*, 0));
+
+GRANT SELECT ON autoracle.compra_futura TO r_mecanico;
+
 
 CREATE OR REPLACE
     PROCEDURE autoracle.p_revisa IS
@@ -265,16 +111,6 @@ CREATE OR REPLACE
     END p_revisa;
 /
 
--- Comprobamos que funciona
-UPDATE AUTORACLE.PIEZA
-    SET FECCADUCIDAD = SYSDATE - 1
-    WHERE CODREF = '1234';
-
-BEGIN
-    p_revisa;
-END;
-/
-
 
 
 /* [3]
@@ -285,12 +121,9 @@ estos dos campos.
 */
 
 ALTER TABLE AUTORACLE.FACTURA
-    ADD (iva_calculado NUMBER, total NUMBER);
+    ADD iva_calculado NUMBER DEFAULT 0
+    ADD total NUMBER DEFAULT 0;
 
--- inicializamos a 0 todos los valores (iva_calculado, total)
--- de esta forma despues lo unico que hacemos es ir acumulando los valores
-UPDATE AUTORACLE.FACTURA
-    SET iva_calculado = 0, total = 0;
 
 CREATE OR REPLACE PROCEDURE AUTORACLE.P_CALCULA_FACT AS
     iva_mult NUMBER;
@@ -533,29 +366,8 @@ CREATE TABLE AUTORACLE.FIDELIZACION(
     anno NUMBER(4)                  -- de 0 a 9999
 );
 
--- Agregamos algunos datos
-INSERT ALL
-    INTO AUTORACLE.FIDELIZACION
-    VALUES ('200', 10, '2018')
-
-    INTO AUTORACLE.FIDELIZACION
-    VALUES ('200', 5, '2017')
-
-    INTO AUTORACLE.FIDELIZACION
-    VALUES ('200', 2, '2016')
-
-    INTO AUTORACLE.FIDELIZACION
-    VALUES ('22', 7, '2019')
-
-    INTO AUTORACLE.FIDELIZACION
-    VALUES ('3', 4, '2018')
-SELECT 1 FROM DUAL;
-COMMIT;
-
-SELECT * FROM AUTORACLE.FIDELIZACION; -- { desde Autoracle }
 
 -- Para asegurarnos de que hay UN descuento POR cliente y año, creamos un trigger
-
 CREATE OR REPLACE
   TRIGGER AUTORACLE.TR_ASEGURAR_FIDELIZACION
     BEFORE INSERT OR UPDATE
@@ -584,13 +396,6 @@ CREATE OR REPLACE
             RAISE_APPLICATION_ERROR(-20015, 'Ya existe un descuento para el cliente '||:new.CLIENTE_IDCLIENTE||' en el año '||:new.ANNO);
     END;
 /
-
--- Comprobamos que funciona el trigger
-INSERT INTO AUTORACLE.FIDELIZACION
-    VALUES ('200', 6, '2018'); -- devuelve error
-
-INSERT INTO AUTORACLE.FIDELIZACION
-    VALUES ('200', 6, '2019');
 
 
 -- Ahora, creamos el paquete :)
@@ -688,7 +493,7 @@ usuarios de modo individual. Tambien se debe disponer de una opcion para bloquea
 y desbloquear todas las cuentas de los empleados.
 */
 
-CREATE SEQUENCE sec_idempleado
+CREATE SEQUENCE autoracle.sec_idempleado
     START WITH 10000
     INCREMENT BY 1;
 
@@ -707,7 +512,7 @@ CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
         des EMPLEADO.DESPEDIDO%TYPE,
         sueldo EMPLEADO.SUELDOBASE%TYPE,
         horas EMPLEADO.HORAS%TYPE,
-        pos EMPLEADO.PUESTO%TYPE, 
+        pos EMPLEADO.PUESTO%TYPE,
         ret EMPLEADO.RETENCIONES%TYPE );
     PROCEDURE PR_BLOQUEAR_USUARIO(
         nombre EMPLEADO.NOMBRE%TYPE,
@@ -727,7 +532,7 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
     PROCEDURE PR_CREAR_EMPLEADO(
         nombre EMPLEADO.NOMBRE%TYPE,
         ap1 EMPLEADO.APELLIDO1%TYPE,
-        ap2 EMPLEADO.APELLIDO2%TYPE ) 
+        ap2 EMPLEADO.APELLIDO2%TYPE )
     AS
         identificacion NUMBER := sec_idempleado.NEXTVAL;
         username ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
@@ -753,15 +558,15 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
     BEGIN
         SELECT UPPER(NOMBRE) || '_' || UPPER(APELLIDO1) || '_' || UPPER(APELLIDO2)
             INTO usuario
-            FROM EMPLEADO
+            FROM autoracle.EMPLEADO
             WHERE IDEMPLEADO = ide;
 
         sentencia := 'DROP USER ' || usuario || ' CASCADE';
 
-        DBMS_OUTPUT.PUT_LINE(sentencia);
+        -- DBMS_OUTPUT.PUT_LINE(sentencia);
         EXECUTE IMMEDIATE sentencia;
-        
-        DELETE FROM EMPLEADO
+
+        DELETE FROM autoracle.EMPLEADO
             WHERE IDEMPLEADO = ide;
     END;
 
@@ -775,7 +580,7 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
         des EMPLEADO.DESPEDIDO%TYPE,
         sueldo EMPLEADO.SUELDOBASE%TYPE,
         horas EMPLEADO.HORAS%TYPE,
-        pos EMPLEADO.PUESTO%TYPE, 
+        pos EMPLEADO.PUESTO%TYPE,
         ret EMPLEADO.RETENCIONES%TYPE )
     AS
         des_mal EXCEPTION;
@@ -784,7 +589,7 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
             RAISE des_mal;
         END IF;
 
-        UPDATE EMPLEADO SET
+        UPDATE autoracle.EMPLEADO SET
             NOMBRE = nom,
             APELLIDO1 = ap1,
             APELLIDO2 = ap2,
@@ -814,7 +619,7 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
         usuario ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
         sentencia VARCHAR2(500) := 'ALTER USER ' || usuario || ' ACCOUNT LOCK';
     BEGIN
-        DBMS_OUTPUT.PUT_LINE(sentencia);
+        -- DBMS_OUTPUT.PUT_LINE(sentencia);
         EXECUTE IMMEDIATE sentencia;
     END;
 
@@ -826,8 +631,9 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
     AS
         usuario ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
         sentencia VARCHAR2(500) := 'ALTER USER ' || usuario || ' ACCOUNT UNLOCK';
+
     BEGIN
-        DBMS_OUTPUT.PUT_LINE(sentencia);
+        -- DBMS_OUTPUT.PUT_LINE(sentencia);
         EXECUTE IMMEDIATE sentencia;
     END;
 
@@ -836,7 +642,9 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
         sentencia VARCHAR(500);
         CURSOR empleados IS
             SELECT UPPER(NOMBRE) || '_' || UPPER(APELLIDO1) || '_' || UPPER(APELLIDO2) AS USUARIO
-            FROM EMPLEADO;
+            FROM autoracle.EMPLEADO
+                WHERE usuario IS NOT NULL;
+
     BEGIN
         FOR emp IN empleados LOOP
             sentencia := 'ALTER USER ' || emp.USUARIO || ' ACCOUNT LOCK';
@@ -849,7 +657,9 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
         sentencia VARCHAR(500);
         CURSOR empleados IS
             SELECT UPPER(NOMBRE) || '_' || UPPER(APELLIDO1) || '_' || UPPER(APELLIDO2) AS USUARIO
-            FROM EMPLEADO;
+                FROM autoracle.EMPLEADO
+                    WHERE usuario IS NOT NULL;
+
     BEGIN
         FOR emp IN empleados LOOP
             sentencia := 'ALTER USER ' || emp.USUARIO || ' ACCOUNT UNLOCK';
@@ -859,109 +669,23 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
 END;
 /
 
--------------------------------------------
--------------------------------------------
-GRANT DROP USER, ALTER USER, CREATE USER TO AUTORACLE; -- { desde SYSTEM }
 
--- datos incorrectos en tabla EMPLEADO
-UPDATE EMPLEADO
-    SET APELLIDO2 = 'Bribon'
-    WHERE NOMBRE = 'Felipe';
-    
-UPDATE EMPLEADO
-    SET APELLIDO2 = 'Rubalcaba'
-    WHERE NOMBRE = 'Miguel';
-    
-UPDATE EMPLEADO
-    SET APELLIDO2 = 'Bribon'
-    WHERE NOMBRE = 'Lola';
-
-BEGIN
-    -- source: https://www.vortexmag.net/12-portugueses-conhecidos-em-todo-o-mundo/
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Joao', 'Pessoa', 'DaSilva');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Amalia', 'Pessoa', 'Rodrigues');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Vasco', 'Pessoa', 'DaGama');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Jose', 'Pessoa', 'Mourinho');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Sara', 'Pessoa', 'Sampaio');
-END;
-/
-
-BEGIN
-    PKG_GESTION_EMPLEADOS.PR_MODIFICAR_EMPLEADO(
-        sec_idempleado.CURRVAL, -- el ID del ultimo empleado creado
-        'Sara',
-        'Pessoa',
-        'Sampaio',
-        sysdate,
-        1
-    ) -- Tiene que dar error
-END;
-/
-
-BEGIN
-    PKG_GESTION_EMPLEADOS.PR_MODIFICAR_EMPLEADO(
-        sec_idempleado.CURRVAL,
-        'Sara',
-        'Pessoa',
-        'Sampaio',
-        sysdate,
-        1,
-        0,
-        0,
-        'PreZidenta',
-        0
-    )
-END;
-/
-
-BEGIN
-    PKG_GESTION_EMPLEADOS.PR_BLOQUEAR_USUARIO('Sara', 'Pessoa', 'Sampaio');
-END;
-/
-
-BEGIN
-    PKG_GESTION_EMPLEADOS.PR_DESBLOQUEAR_USUARIO('Sara', 'Pessoa', 'Sampaio');
-END;
-/
-
-BEGIN
-    -- no funcionara si algun empleado en la tabla EMPLEADO no tiene usuario creado :(
-    PKG_GESTION_EMPLEADOS.PR_BLOQUEAR_TODOS_EMPLEADOS;
-END;
-/
-
-BEGIN
-    -- no funcionara si algun empleado en la tabla EMPLEADO no tiene usuario creado :(
-    PKG_GESTION_EMPLEADOS.PR_DESBLOQUEAR_TODOS_EMPLEADOS;
-END;
-/
-
-BEGIN
-    PKG_GESTION_EMPLEADOS.PR_BORRAR_EMPLEADO(sec_idempleado.CURRVAL);
-END;
-/
-BEGIN
-    -- source: https://www.vortexmag.net/12-portugueses-conhecidos-em-todo-o-mundo/
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Joao', 'Pessoa', 'DaSilva');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Amalia', 'Pessoa', 'Rodrigues');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Vasco', 'Pessoa', 'DaGama');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Jose', 'Pessoa', 'Mourinho');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Sara', 'Pessoa', 'Sampaio');
-END;
-/
 
 /* [8]
-Escribir un trigger que cuando se eliminen los datos de un cliente
-fidelizado se eliminen a su vez toda su
-informacion de fidelizacion y los datos de su vehiculo.
+Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se
+eliminen a su vez toda su informacion de fidelizacion y los datos de su vehiculo.
 */
 
-CREATE OR REPLACE TRIGGER TR_Eliminar_Cliente_Fidelizado
-BEFORE DELETE ON CLIENTE FOR EACH ROW
-BEGIN
-	DELETE FROM FIDELIZACION WHERE CLIENTE = :old.IDCLIENTE;
-	DELETE FROM VEHICULO WHERE CLIENTE_IDCLIENTE = :old.IDCLIENTE;
-END;
+CREATE OR REPLACE
+    TRIGGER autoracle.TR_Eliminar_Cliente_Fidelizado
+        BEFORE DELETE
+            ON autoracle.CLIENTE
+                FOR EACH ROW
+
+    BEGIN
+        DELETE FROM autoracle.FIDELIZACION WHERE CLIENTE_IDCLIENTE = :old.IDCLIENTE;
+        DELETE FROM autoracle.VEHICULO WHERE CLIENTE_IDCLIENTE = :old.IDCLIENTE;
+    END;
 /
 
 
@@ -1029,3 +753,165 @@ BEGIN
              name => '"AUTORACLE"."JOB_RECOMPENSA"');
 END;
 /
+
+
+
+-- [1]
+-- Vistas generadas con tablas que se modificaron / crearon en los ejercicios
+
+CREATE OR REPLACE
+    VIEW autoracle.v_clientes_datos AS (
+        SELECT
+            C.idcliente AS "ID",
+            C.usuario AS usuario,
+            C.nombre AS nombre,
+            C.apellido1 AS "PRIMER APELLIDO",
+            C.apellido2 AS "SEGUNDO APELLIDO",
+            C.telefono AS telefono,
+            C.email AS email,
+            V.matricula AS matricula,
+            MA.nombre AS marca,
+            MO.nombre AS modelo,
+            V.kilometraje AS kilometros
+
+            FROM autoracle.cliente C
+                INNER JOIN autoracle.vehiculo V ON C.idcliente = V.cliente_idcliente
+                INNER JOIN autoracle.marca MA   ON V.modelo_marca_idmarca = MA.idmarca
+                INNER JOIN autoracle.modelo MO  ON V.modelo_idmodelo = MO.idmodelo
+      );
+
+CREATE OR REPLACE
+    VIEW autoracle.v_cliente_datos AS (
+        SELECT *
+            FROM autoracle.v_clientes_datos
+                WHERE usuario = user
+    );
+
+
+CREATE OR REPLACE
+    VIEW autoracle.v_clientes_servicios AS (
+        SELECT
+        C.idcliente AS "ID",
+        C.usuario AS usuario,
+        C.nombre AS nombre,
+        C.apellido1 AS "PRIMER APELLIDO",
+        C.apellido2 AS "SEGUNDO APELLIDO",
+        C.telefono AS telefono,
+        C.email AS email,
+        S.idservicio AS servicio,
+        S.estado AS estado,
+        S.fecapertura AS "FECHA DE APERTURA",
+        S.fecrealizacion AS "FECHA DE REALIZACION",
+        S.fecrecepcion AS "FECHA DE RECEPCION",
+        S.obschapa AS chapa,
+        S.efectividad AS efectividad,
+        S.vehiculo_numbastidor AS vehiculo,
+        V.matricula AS matricula,
+        MA.nombre AS marca,
+        MO.nombre AS modelo,
+        V.kilometraje AS kilometros
+
+        FROM autoracle.cliente C
+            INNER JOIN autoracle.vehiculo V ON C.idcliente = V.cliente_idcliente
+            INNER JOIN autoracle.marca MA   ON V.modelo_marca_idmarca = MA.idmarca
+            INNER JOIN autoracle.modelo MO  ON V.modelo_idmodelo = MO.idmodelo
+            INNER JOIN autoracle.servicio S ON V.numbastidor = S.vehiculo_numbastidor
+  );
+
+CREATE OR REPLACE
+    VIEW autoracle.v_cliente_servicios AS (
+        SELECT *
+            FROM autoracle.v_clientes_servicios
+                WHERE usuario = user
+    );
+
+
+CREATE OR REPLACE
+    VIEW autoracle.v_empleados_datos AS (
+        SELECT
+            E.idempleado AS "ID",
+            E.usuario AS usuario,
+            E.nombre AS nombre,
+            E.apellido1 AS "PRIMER APELLIDO",
+            E.apellido2 AS "SEGUNDO APELLIDO",
+            E.email AS email,
+            E.despedido AS despedido,
+            E.fecentrada AS contratado,
+            E.sueldobase AS "SUELDO BASE",
+            E.horas AS horas,
+            E.puesto AS puesto,
+            E.retenciones AS retenciones,
+            V.identificador AS vacaciones,
+            V.concedido AS concedidas,
+            V.fecentrada AS comienzo,
+            V.fecsalida AS final
+
+        FROM autoracle.empleado E
+            INNER JOIN autoracle.vacaciones V ON E.idempleado = V.empleado_idempleado
+  );
+
+CREATE OR REPLACE
+    VIEW autoracle.v_empleado_datos AS (
+        SELECT *
+            FROM autoracle.v_empleados_datos
+                WHERE usuario = user
+    );
+
+
+CREATE OR REPLACE
+    VIEW autoracle.v_empleados_servicios AS (
+        SELECT
+            E.idempleado AS "ID",
+            E.usuario AS usuario,
+            E.nombre AS nombre,
+            E.apellido1 AS "PRIMER APELLIDO",
+            E.apellido2 AS "SEGUNDO APELLIDO",
+            E.email AS email,
+            S.idservicio AS servicio,
+            S.estado AS "ESTADO DEL SERVICO",
+            S.fecapertura AS "FECHA DE APERTURA",
+            S.fecrealizacion AS "FECHA DE REALIZACION",
+            S.fecrecepcion AS "FECHA DE RECEPCION",
+            S.obschapa AS chapa,
+            S.efectividad AS efectividad,
+            S.vehiculo_numbastidor AS vehiculo,
+            R.motivo AS "MOTIVO DE REPARACION",
+            R.horas AS horas,
+            M.fecproxrevision AS "PROXIMA REVISION",
+            X.estado AS "ESTADO DEL EXAMEN",
+            C.nombre AS categoria,
+            F.idfactura AS factura,
+            F.fecemision AS "FECHA DE EMISION",
+            F.descuento AS descuento,
+            F.iva AS iva,
+            F.total AS "TOTAL (SIN IVA)",
+            F.iva_calculado AS "TOTAL (CON IVA)"
+
+            FROM autoracle.empleado E
+                INNER JOIN autoracle.trabaja T          ON E.idempleado = T.empleado_idempleado
+                INNER JOIN autoracle.servicio S         ON T.servicio_idservicio = S.idservicio
+                INNER JOIN autoracle.reparacion R       ON S.idservicio = R.idservicio
+                INNER JOIN autoracle.mantenimiento M    ON S.idservicio = M.idservicio
+                INNER JOIN autoracle.examen X           ON M.idservicio = X.mantenimiento_idservicio
+                INNER JOIN autoracle.categoria C        ON X.categoria_idcategoria = C.idcategoria
+                INNER JOIN autoracle.factura F          ON E.idempleado = F.empleado_idempleado
+  );
+
+CREATE OR REPLACE
+    VIEW autoracle.v_empleado_servicios AS (
+        SELECT *
+            FROM autoracle.v_empleados_servicios
+                WHERE usuario = user
+    );
+
+
+GRANT SELECT ON autoracle.v_clientes_datos TO r_administrativo;
+GRANT SELECT ON autoracle.v_clientes_servicios TO r_administrativo;
+GRANT SELECT ON autoracle.v_empleados_datos TO r_administrativo;
+GRANT SELECT ON autoracle.v_empleados_servicios TO r_administrativo;
+
+GRANT SELECT ON autoracle.v_empleado_datos TO r_mecanico;
+GRANT SELECT ON autoracle.v_empleado_servicios TO r_mecanico;
+
+GRANT SELECT ON autoracle.v_cliente_datos TO r_cliente;
+GRANT SELECT ON autoracle.v_cliente_servicios TO r_cliente;
