@@ -1,0 +1,2840 @@
+-- Borrar el espacio de tablas y el usuario (limpieza)
+DROP USER autoracle
+    CASCADE;
+
+DROP TABLESPACE ts_autoracle
+    INCLUDING CONTENTS;
+
+
+-- Crear el espacio de tablas y el usuario para alojar la Base de Datos
+CREATE TABLESPACE ts_autoracle
+    DATAFILE 'C:\USERS\APP\ALUMNOS\ORADATA\ORCL\autoracle.dbf'
+    SIZE 16M
+    AUTOEXTEND ON NEXT 200K
+    MAXSIZE 128M;
+
+CREATE USER autoracle
+    IDENTIFIED BY autoracle
+    DEFAULT TABLESPACE ts_autoracle
+    QUOTA UNLIMITED ON ts_autoracle;
+
+GRANT
+    CREATE SESSION,
+    CREATE TABLE,
+    CREATE VIEW,
+    CREATE MATERIALIZED VIEW,
+    CREATE PROCEDURE
+    TO AUTORACLE;
+
+
+-- Tablas y datos para el trabajo
+--------------------------------------------------------
+-- Archivo creado  - viernes-mayo-29-2020
+--------------------------------------------------------
+--------------------------------------------------------
+--  DDL for View V_CLIENTE_DATOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE FORCE EDITIONABLE VIEW "AUTORACLE"."V_CLIENTE_DATOS" ("ID", "USUARIO", "NOMBRE", "PRIMER APELLIDO", "SEGUNDO APELLIDO", "TELEFONO", "EMAIL", "MATRICULA", "MARCA", "MODELO", "KILOMETROS") AS
+  (
+        SELECT "ID","USUARIO","NOMBRE","PRIMER APELLIDO","SEGUNDO APELLIDO","TELEFONO","EMAIL","MATRICULA","MARCA","MODELO","KILOMETROS"
+            FROM autoracle.v_clientes_datos
+                WHERE usuario = user
+    )
+;
+--------------------------------------------------------
+--  DDL for View V_CLIENTES_DATOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE FORCE EDITIONABLE VIEW "AUTORACLE"."V_CLIENTES_DATOS" ("ID", "USUARIO", "NOMBRE", "PRIMER APELLIDO", "SEGUNDO APELLIDO", "TELEFONO", "EMAIL", "MATRICULA", "MARCA", "MODELO", "KILOMETROS") AS
+  (
+        SELECT
+            C.idcliente AS "ID",
+            C.usuario AS usuario,
+            C.nombre AS nombre,
+            C.apellido1 AS "PRIMER APELLIDO",
+            C.apellido2 AS "SEGUNDO APELLIDO",
+            C.telefono AS telefono,
+            C.email AS email,
+            V.matricula AS matricula,
+            MA.nombre AS marca,
+            MO.nombre AS modelo,
+            V.kilometraje AS kilometros
+
+            FROM autoracle.cliente C
+                INNER JOIN autoracle.vehiculo V ON C.idcliente = V.cliente_idcliente
+                INNER JOIN autoracle.marca MA   ON V.modelo_marca_idmarca = MA.idmarca
+                INNER JOIN autoracle.modelo MO  ON V.modelo_idmodelo = MO.idmodelo
+      )
+;
+--------------------------------------------------------
+--  DDL for View V_CLIENTE_SERVICIOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE FORCE EDITIONABLE VIEW "AUTORACLE"."V_CLIENTE_SERVICIOS" ("ID", "USUARIO", "NOMBRE", "PRIMER APELLIDO", "SEGUNDO APELLIDO", "TELEFONO", "EMAIL", "SERVICIO", "ESTADO", "FECHA DE APERTURA", "FECHA DE REALIZACION", "FECHA DE RECEPCION", "CHAPA", "EFECTIVIDAD", "VEHICULO", "MATRICULA", "MARCA", "MODELO", "KILOMETROS") AS
+  (
+        SELECT "ID","USUARIO","NOMBRE","PRIMER APELLIDO","SEGUNDO APELLIDO","TELEFONO","EMAIL","SERVICIO","ESTADO","FECHA DE APERTURA","FECHA DE REALIZACION","FECHA DE RECEPCION","CHAPA","EFECTIVIDAD","VEHICULO","MATRICULA","MARCA","MODELO","KILOMETROS"
+            FROM autoracle.v_clientes_servicios
+                WHERE usuario = user
+    )
+;
+--------------------------------------------------------
+--  DDL for View V_CLIENTES_SERVICIOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE FORCE EDITIONABLE VIEW "AUTORACLE"."V_CLIENTES_SERVICIOS" ("ID", "USUARIO", "NOMBRE", "PRIMER APELLIDO", "SEGUNDO APELLIDO", "TELEFONO", "EMAIL", "SERVICIO", "ESTADO", "FECHA DE APERTURA", "FECHA DE REALIZACION", "FECHA DE RECEPCION", "CHAPA", "EFECTIVIDAD", "VEHICULO", "MATRICULA", "MARCA", "MODELO", "KILOMETROS") AS
+  (
+        SELECT
+        C.idcliente AS "ID",
+        C.usuario AS usuario,
+        C.nombre AS nombre,
+        C.apellido1 AS "PRIMER APELLIDO",
+        C.apellido2 AS "SEGUNDO APELLIDO",
+        C.telefono AS telefono,
+        C.email AS email,
+        S.idservicio AS servicio,
+        S.estado AS estado,
+        S.fecapertura AS "FECHA DE APERTURA",
+        S.fecrealizacion AS "FECHA DE REALIZACION",
+        S.fecrecepcion AS "FECHA DE RECEPCION",
+        S.obschapa AS chapa,
+        S.efectividad AS efectividad,
+        S.vehiculo_numbastidor AS vehiculo,
+        V.matricula AS matricula,
+        MA.nombre AS marca,
+        MO.nombre AS modelo,
+        V.kilometraje AS kilometros
+
+        FROM autoracle.cliente C
+            INNER JOIN autoracle.vehiculo V ON C.idcliente = V.cliente_idcliente
+            INNER JOIN autoracle.marca MA   ON V.modelo_marca_idmarca = MA.idmarca
+            INNER JOIN autoracle.modelo MO  ON V.modelo_idmodelo = MO.idmodelo
+            INNER JOIN autoracle.servicio S ON V.numbastidor = S.vehiculo_numbastidor
+  )
+;
+--------------------------------------------------------
+--  DDL for View V_EMPLEADO_DATOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE FORCE EDITIONABLE VIEW "AUTORACLE"."V_EMPLEADO_DATOS" ("ID", "USUARIO", "NOMBRE", "PRIMER APELLIDO", "SEGUNDO APELLIDO", "EMAIL", "DESPEDIDO", "CONTRATADO", "SUELDO BASE", "HORAS", "PUESTO", "RETENCIONES", "VACACIONES", "CONCEDIDAS", "COMIENZO", "FINAL") AS
+  (
+        SELECT "ID","USUARIO","NOMBRE","PRIMER APELLIDO","SEGUNDO APELLIDO","EMAIL","DESPEDIDO","CONTRATADO","SUELDO BASE","HORAS","PUESTO","RETENCIONES","VACACIONES","CONCEDIDAS","COMIENZO","FINAL"
+            FROM autoracle.v_empleados_datos
+                WHERE usuario = user
+    )
+;
+--------------------------------------------------------
+--  DDL for View V_EMPLEADOS_DATOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE FORCE EDITIONABLE VIEW "AUTORACLE"."V_EMPLEADOS_DATOS" ("ID", "USUARIO", "NOMBRE", "PRIMER APELLIDO", "SEGUNDO APELLIDO", "EMAIL", "DESPEDIDO", "CONTRATADO", "SUELDO BASE", "HORAS", "PUESTO", "RETENCIONES", "VACACIONES", "CONCEDIDAS", "COMIENZO", "FINAL") AS
+  (
+        SELECT
+            E.idempleado AS "ID",
+            E.usuario AS usuario,
+            E.nombre AS nombre,
+            E.apellido1 AS "PRIMER APELLIDO",
+            E.apellido2 AS "SEGUNDO APELLIDO",
+            E.email AS email,
+            E.despedido AS despedido,
+            E.fecentrada AS contratado,
+            E.sueldobase AS "SUELDO BASE",
+            E.horas AS horas,
+            E.puesto AS puesto,
+            E.retenciones AS retenciones,
+            V.identificador AS vacaciones,
+            V.concedido AS concedidas,
+            V.fecentrada AS comienzo,
+            V.fecsalida AS final
+
+        FROM autoracle.empleado E
+            INNER JOIN autoracle.vacaciones V ON E.idempleado = V.empleado_idempleado
+  )
+;
+--------------------------------------------------------
+--  DDL for View V_EMPLEADO_SERVICIOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE FORCE EDITIONABLE VIEW "AUTORACLE"."V_EMPLEADO_SERVICIOS" ("ID", "USUARIO", "NOMBRE", "PRIMER APELLIDO", "SEGUNDO APELLIDO", "EMAIL", "SERVICIO", "ESTADO DEL SERVICO", "FECHA DE APERTURA", "FECHA DE REALIZACION", "FECHA DE RECEPCION", "CHAPA", "EFECTIVIDAD", "VEHICULO", "MOTIVO DE REPARACION", "HORAS", "PROXIMA REVISION", "ESTADO DEL EXAMEN", "CATEGORIA", "FACTURA", "FECHA DE EMISION", "DESCUENTO", "IVA", "TOTAL (SIN IVA)", "TOTAL (CON IVA)") AS
+  (
+        SELECT "ID","USUARIO","NOMBRE","PRIMER APELLIDO","SEGUNDO APELLIDO","EMAIL","SERVICIO","ESTADO DEL SERVICO","FECHA DE APERTURA","FECHA DE REALIZACION","FECHA DE RECEPCION","CHAPA","EFECTIVIDAD","VEHICULO","MOTIVO DE REPARACION","HORAS","PROXIMA REVISION","ESTADO DEL EXAMEN","CATEGORIA","FACTURA","FECHA DE EMISION","DESCUENTO","IVA","TOTAL (SIN IVA)","TOTAL (CON IVA)"
+            FROM autoracle.v_empleados_servicios
+                WHERE usuario = user
+    )
+;
+--------------------------------------------------------
+--  DDL for View V_EMPLEADOS_SERVICIOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE FORCE EDITIONABLE VIEW "AUTORACLE"."V_EMPLEADOS_SERVICIOS" ("ID", "USUARIO", "NOMBRE", "PRIMER APELLIDO", "SEGUNDO APELLIDO", "EMAIL", "SERVICIO", "ESTADO DEL SERVICO", "FECHA DE APERTURA", "FECHA DE REALIZACION", "FECHA DE RECEPCION", "CHAPA", "EFECTIVIDAD", "VEHICULO", "MOTIVO DE REPARACION", "HORAS", "PROXIMA REVISION", "ESTADO DEL EXAMEN", "CATEGORIA", "FACTURA", "FECHA DE EMISION", "DESCUENTO", "IVA", "TOTAL (SIN IVA)", "TOTAL (CON IVA)") AS
+  (
+        SELECT
+            E.idempleado AS "ID",
+            E.usuario AS usuario,
+            E.nombre AS nombre,
+            E.apellido1 AS "PRIMER APELLIDO",
+            E.apellido2 AS "SEGUNDO APELLIDO",
+            E.email AS email,
+            S.idservicio AS servicio,
+            S.estado AS "ESTADO DEL SERVICO",
+            S.fecapertura AS "FECHA DE APERTURA",
+            S.fecrealizacion AS "FECHA DE REALIZACION",
+            S.fecrecepcion AS "FECHA DE RECEPCION",
+            S.obschapa AS chapa,
+            S.efectividad AS efectividad,
+            S.vehiculo_numbastidor AS vehiculo,
+            R.motivo AS "MOTIVO DE REPARACION",
+            R.horas AS horas,
+            M.fecproxrevision AS "PROXIMA REVISION",
+            X.estado AS "ESTADO DEL EXAMEN",
+            C.nombre AS categoria,
+            F.idfactura AS factura,
+            F.fecemision AS "FECHA DE EMISION",
+            F.descuento AS descuento,
+            F.iva AS iva,
+            F.total AS "TOTAL (SIN IVA)",
+            F.iva_calculado AS "TOTAL (CON IVA)"
+
+            FROM autoracle.empleado E
+                INNER JOIN autoracle.trabaja T          ON E.idempleado = T.empleado_idempleado
+                INNER JOIN autoracle.servicio S         ON T.servicio_idservicio = S.idservicio
+                INNER JOIN autoracle.reparacion R       ON S.idservicio = R.idservicio
+                INNER JOIN autoracle.mantenimiento M    ON S.idservicio = M.idservicio
+                INNER JOIN autoracle.examen X           ON M.idservicio = X.mantenimiento_idservicio
+                INNER JOIN autoracle.categoria C        ON X.categoria_idcategoria = C.idcategoria
+                INNER JOIN autoracle.factura F          ON E.idempleado = F.empleado_idempleado
+  )
+;
+--------------------------------------------------------
+--  DDL for View V_IVA_TRIMESTRE
+--------------------------------------------------------
+
+  CREATE OR REPLACE FORCE EDITIONABLE VIEW "AUTORACLE"."V_IVA_TRIMESTRE" ("ANNO", "TRIMESTRE", "IVA_DEVANGADO") AS
+  SELECT  TO_CHAR(f.FECEMISION, 'YYYY') AS "ANNO",
+                TO_CHAR(f.FECEMISION, 'Q') AS "TRIMESTRE",
+                (f.IVA / 100) * SUM(p.PRECIOUNIDADVENTA) AS IVA_DEVANGADO
+            FROM AUTORACLE.factura f
+                JOIN AUTORACLE.contiene c ON f.IDFACTURA = c.FACTURA_IDFACTURA
+                JOIN AUTORACLE.pieza p ON p.CODREF = c.PIEZA_CODREF
+                GROUP BY TO_CHAR(f.FECEMISION, 'YYYY'), TO_CHAR(f.FECEMISION, 'Q'), f.IVA
+;
+--------------------------------------------------------
+--  DDL for Type LOGMNR$COL_GG_REC
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE TYPE "SYSTEM"."LOGMNR$COL_GG_REC" as object
+(
+LOGMNR_UID NUMBER,
+OBJ# NUMBER,
+MD_COL_NAME VARCHAR2(384),
+MD_COL_NUM NUMBER,                 /* col# */
+MD_COL_SEGCOL NUMBER,              /* segcol# */
+MD_COL_TYPE NUMBER,                /* type# */
+MD_COL_LEN NUMBER,
+MD_COL_PREC NUMBER,                /* precision */
+MD_COL_SCALE NUMBER,
+MD_COL_CHARSETID NUMBER,           /* character set id */
+MD_COL_CHARSETFORM NUMBER,         /* character set form */
+MD_COL_ALT_TYPE VARCHAR2(4000),    /* adt type if any */
+MD_COL_ALT_PREC NUMBER,            /* precision of the adt attribute */
+MD_COL_ALT_CHAR_USED VARCHAR2(2),  /* charset used by the adt attribute */
+MD_COL_ALT_LENGTH NUMBER,          /* length of the adt attribute */
+MD_COL_ALT_XML_TYPE NUMBER,        /* 0/1. is xml_type column */
+MD_COL_ALT_BINARYXML_TYPE NUMBER,  /* 0/1. is xml_type stored as binary */
+MD_COL_ENC_ISENC VARCHAR2(3) ,     /* 'YES'/'NO' */
+MD_COL_ENC_NOSALT VARCHAR2(3) ,    /* 'YES'/'NO' */
+MD_COL_ENC_ISLOB VARCHAR2(3) ,     /* 'YES'/'NO' */
+MD_COL_ALT_OBJECTXML_TYPE NUMBER,  /* 0/1 xml_type stored as object */
+MD_COL_HASNOTNULLDEFAULT VARCHAR2(3) ,   /* 'YES'/'NO' */
+MD_COL_ALT_TYPE_OWNER VARCHAR2(384),  /* owner of the adt type if any */
+PROPERTY NUMBER,
+XCOLTYPEFLAGS NUMBER,
+XOPQTYPEFLAGS NUMBER,
+EAFLAGS NUMBER,
+XFQCOLNAME VARCHAR2(4000),
+SPARE1  NUMBER,
+SPARE2  NUMBER,
+SPARE3  NUMBER,
+SPARE4  VARCHAR2(4000),
+SPARE5  VARCHAR2(4000),
+SPARE6  VARCHAR2(4000),
+/* Following fields added in 12.1.0.2 */
+OBJV# NUMBER,
+INTCOL# NUMBER,
+INTERVAL_LEADING_PRECISION NUMBER,
+INTERVAL_TRAILING_PRECISION NUMBER,
+TOID RAW(16),
+TYPENAME VARCHAR2(384),
+NUMINTCOLS NUMBER,
+NUMATTRS NUMBER,
+ADTORDER NUMBER,
+LOGMNR_SPARE1 NUMBER,
+LOGMNR_SPARE2 NUMBER,
+LOGMNR_SPARE3 VARCHAR2(1000),
+LOGMNR_SPARE4 DATE,
+LOGMNR_SPARE5 NUMBER,
+LOGMNR_SPARE6 NUMBER,
+LOGMNR_SPARE7 NUMBER,
+LOGMNR_SPARE8 NUMBER,
+LOGMNR_SPARE9 NUMBER,
+XTYPENAME VARCHAR2(4000),
+XTOPINTCOL NUMBER,
+XREFFEDTABLEOBJN NUMBER,
+XREFFEDTABLEOBJV NUMBER,
+XOPQTYPETYPE NUMBER,
+XOPQLOBINTCOL NUMBER,
+XOPQOBJINTCOL NUMBER,
+XXMLINTCOL    NUMBER,
+LOGMNRDERIVEDFLAGS NUMBER,
+/* Following fields added in 12.2 */
+COLLID      NUMBER,
+COLLINTCOL#  NUMBER,
+ACDRRESCOL# NUMBER
+);
+
+/
+--------------------------------------------------------
+--  DDL for Type LOGMNR$COL_GG_RECS
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE TYPE "SYSTEM"."LOGMNR$COL_GG_RECS" AS TABLE OF  SYSTEM.LOGMNR$COL_GG_REC;
+
+/
+--------------------------------------------------------
+--  DDL for Type LOGMNR$GSBA_GG_REC
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE TYPE "SYSTEM"."LOGMNR$GSBA_GG_REC" AS OBJECT
+(
+LOGMNR_UID NUMBER,
+NAME           VARCHAR2(384),
+VALUE          VARCHAR2(4000),
+LOGMNR_SPARE1  NUMBER,
+LOGMNR_SPARE2  NUMBER,
+LOGMNR_SPARE3  VARCHAR2(4000),
+LOGMNR_SPARE4  DATE
+);
+
+/
+--------------------------------------------------------
+--  DDL for Type LOGMNR$GSBA_GG_RECS
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE TYPE "SYSTEM"."LOGMNR$GSBA_GG_RECS" AS TABLE OF  SYSTEM.LOGMNR$GSBA_GG_REC;
+
+/
+--------------------------------------------------------
+--  DDL for Type LOGMNR$KEY_GG_REC
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE TYPE "SYSTEM"."LOGMNR$KEY_GG_REC" as object
+(
+LOGMNR_UID NUMBER,
+KEY# NUMBER,                   /* index obj# or con# */
+KEY_FLAGS NUMBER,              /* index or constraint */
+KEY_NAME VARCHAR2(384),        /* index name or constraint name */
+INDEX_OWNER# NUMBER,
+INDEX_OWNERNAME VARCHAR2(384),
+COLNAME VARCHAR2(384),
+INTCOL# NUMBER,
+which number,
+KEY_ORDER VARCHAR2(10),              /* asc or desc */
+KEYCOL_FLAGS NUMBER,           /* Column properties such as is_null */
+SPARE1  NUMBER,
+SPARE2  NUMBER,
+SPARE3  NUMBER,
+SPARE4  VARCHAR2(4000),
+SPARE5  VARCHAR2(4000),
+SPARE6  VARCHAR2(4000)
+);
+
+/
+--------------------------------------------------------
+--  DDL for Type LOGMNR$KEY_GG_RECS
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE TYPE "SYSTEM"."LOGMNR$KEY_GG_RECS" AS TABLE OF  SYSTEM.LOGMNR$KEY_GG_REC;
+
+/
+--------------------------------------------------------
+--  DDL for Type LOGMNR$SEQ_GG_REC
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE TYPE "SYSTEM"."LOGMNR$SEQ_GG_REC" as object
+(
+LOGMNR_UID NUMBER,
+OBJ# NUMBER,
+NAME VARCHAR2(384),
+OWNER# NUMBER,
+OWNERNAME VARCHAR2(384),
+FLAGS NUMBER,
+MD_TAB_SEQCACHE NUMBER,
+MD_TAB_SEQINCREMENTBY NUMBER,
+SPARE1  NUMBER,
+SPARE2  NUMBER,
+SPARE3  NUMBER,
+SPARE4  VARCHAR2(4000),
+SPARE5  VARCHAR2(4000),
+SPARE6  VARCHAR2(4000)
+);
+
+/
+--------------------------------------------------------
+--  DDL for Type LOGMNR$SEQ_GG_RECS
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE TYPE "SYSTEM"."LOGMNR$SEQ_GG_RECS" AS TABLE OF  SYSTEM.LOGMNR$SEQ_GG_REC;
+
+/
+--------------------------------------------------------
+--  DDL for Type LOGMNR$TAB_GG_REC
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE TYPE "SYSTEM"."LOGMNR$TAB_GG_REC" as object
+(
+LOGMNR_UID NUMBER,
+OBJ# NUMBER,
+BASEOBJV# NUMBER,
+MD_TAB_USERID NUMBER,                /* owner# */
+MD_TAB_COLCOUNT NUMBER,              /* user column count */
+MD_TAB_TOTAL_COL_NUM NUMBER,         /* kernal column count */
+MD_TAB_LOG_GROUP_EXISTS NUMBER,      /* Any log group exists for this table */
+MD_TAB_IOT VARCHAR2(3) ,             /* 'YES'/'NO' IS IOT? */
+MD_TAB_IOT_OVERFLOW VARCHAR2(3) ,    /* 'YES'/'NO' IOT with overflow ? */
+MD_TAB_PARTITION  VARCHAR2(3) ,      /* 'YES'/'NO' is partitioned ? */
+MD_TAB_SUBPARTITION VARCHAR2(3) ,    /* 'YES'/'NO' is sub partitioned? */
+MD_TAB_XMLTYPETABLE VARCHAR2(3) ,    /* 'YES'/'NO' is xmltype table? */
+MD_TAB_OBJECTID NUMBER,              /* object id if table object */
+MD_TAB_OWNER VARCHAR2(384),     /* owner name */
+MD_TAB_NAME VARCHAR2(384),      /* table name */
+MD_TAB_OBJTYPE VARCHAR2(384),   /* Object type name */
+MD_TAB_SCN NUMBER,                   /* COMMIT_SCN of this table version */
+TAB_FLAGS NUMBER,
+TRIGFLAG NUMBER,
+OBJ_FLAGS NUMBER,
+PROPERTY NUMBER,
+PARTTYPE NUMBER,
+SUBPARTTYPE NUMBER,
+SPARE1  NUMBER,
+SPARE2  NUMBER,
+SPARE3  NUMBER,
+SPARE4  VARCHAR2(4000),
+SPARE5  VARCHAR2(4000),
+SPARE6  VARCHAR2(4000),
+/* Following fields added in 12.1.0.2 */
+LVLCNT NUMBER,
+LVL1OBJ# NUMBER,
+LVL2OBJ# NUMBER,
+LVL1TYPE# NUMBER,
+LVL2TYPE# NUMBER,
+LVL1NAME  VARCHAR2(384),
+LVL2NAME  VARCHAR2(384),
+INTCOLS   NUMBER,
+ASSOC#    NUMBER,
+XIDUSN    NUMBER,
+XIDSLT    NUMBER,
+XIDSQN    NUMBER,
+DROP_SCN  NUMBER,
+FLAGS     NUMBER,
+LOGMNR_SPARE1   NUMBER,
+LOGMNR_SPARE2   NUMBER,
+LOGMNR_SPARE3   VARCHAR2(1000),
+LOGMNR_SPARE4   DATE,
+LOGMNR_SPARE5   NUMBER,
+LOGMNR_SPARE6   NUMBER,
+LOGMNR_SPARE7   NUMBER,
+LOGMNR_SPARE8   NUMBER,
+LOGMNR_SPARE9   NUMBER,
+UNSUPPORTEDCOLS  NUMBER,
+COMPLEXTYPECOLS  NUMBER,
+NTPARENTOBJNUM   NUMBER,
+NTPARENTOBJVERSION NUMBER,
+NTPARENTINTCOLNUM  NUMBER,
+LOGMNRTLOFLAGS    NUMBER,
+LOGMNRMCV VARCHAR2(30),
+/* Following fields added in 12.2 */
+ACDRFLAGS        NUMBER,                                    /* automatic CDR */
+ACDRTSOBJ#       NUMBER,                                    /* automatic CDR */
+ACDRROWTSINTCOL# NUMBER                                     /* automatic CDR */
+);
+
+/
+--------------------------------------------------------
+--  DDL for Type LOGMNR$TAB_GG_RECS
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE TYPE "SYSTEM"."LOGMNR$TAB_GG_RECS" AS TABLE OF  SYSTEM.LOGMNR$TAB_GG_REC;
+
+/
+--------------------------------------------------------
+--  DDL for Type LOGMNR$USER_GG_REC
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE TYPE "SYSTEM"."LOGMNR$USER_GG_REC" AS OBJECT
+(
+LOGMNR_UID     NUMBER,
+USERNAME       VARCHAR2(384),
+USERID         NUMBER,
+LOGMNR_SPARE1  NUMBER,
+LOGMNR_SPARE2  NUMBER,
+LOGMNR_SPARE3  VARCHAR2(4000),
+LOGMNR_SPARE4  DATE
+);
+
+/
+--------------------------------------------------------
+--  DDL for Type LOGMNR$USER_GG_RECS
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE TYPE "SYSTEM"."LOGMNR$USER_GG_RECS" AS TABLE OF  SYSTEM.LOGMNR$USER_GG_REC;
+
+/
+--------------------------------------------------------
+--  DDL for Table CATEGORIA
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."CATEGORIA"
+   (	"IDCATEGORIA" NUMBER(*,0),
+	"NOMBRE" VARCHAR2(128 BYTE)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table CITA
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."CITA"
+   (	"IDCITA" NUMBER(*,0),
+	"FECHA_SOLICITUD" DATE,
+	"FECHA_CONCERTADA" DATE,
+	"CLIENTE_IDCLIENTE" VARCHAR2(16 BYTE)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table CLIENTE
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."CLIENTE"
+   (	"IDCLIENTE" VARCHAR2(16 BYTE),
+	"TELEFONO" NUMBER(*,0),
+	"NOMBRE" VARCHAR2(64 BYTE),
+	"APELLIDO1" VARCHAR2(64 BYTE),
+	"APELLIDO2" VARCHAR2(64 BYTE),
+	"EMAIL" VARCHAR2(64 BYTE),
+	"USUARIO" VARCHAR2(32 BYTE)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table COMPATIBLE
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."COMPATIBLE"
+   (	"PIEZA_CODREF" VARCHAR2(16 BYTE),
+	"MODELO_IDMODELO" NUMBER(*,0),
+	"MODELO_IDMARCA" NUMBER(*,0)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table COMPRA
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."COMPRA"
+   (	"IDCOMPRA" NUMBER(*,0),
+	"FECEMISION" DATE,
+	"PROVEEDOR_NIF" VARCHAR2(16 BYTE),
+	"FECRECEPCION" DATE
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table COMPRA_FUTURA
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."COMPRA_FUTURA"
+   (	"PROVEEDOR_NIF" VARCHAR2(16 BYTE),
+	"TELEFONO" NUMBER(*,0),
+	"NOMBRE" VARCHAR2(64 BYTE),
+	"EMAIL" VARCHAR2(64 BYTE),
+	"CODREF_PIEZA" NUMBER(*,0),
+	"CANTIDAD" NUMBER(*,0)
+   ) SEGMENT CREATION DEFERRED
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Table CONTIENE
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."CONTIENE"
+   (	"FACTURA_IDFACTURA" NUMBER(*,0),
+	"PIEZA_CODREF" VARCHAR2(16 BYTE)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table EMPLEADO
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."EMPLEADO"
+   (	"IDEMPLEADO" VARCHAR2(16 BYTE),
+	"NOMBRE" VARCHAR2(64 BYTE),
+	"APELLIDO1" VARCHAR2(64 BYTE),
+	"APELLIDO2" VARCHAR2(64 BYTE),
+	"FECENTRADA" DATE,
+	"DESPEDIDO" NUMBER,
+	"SUELDOBASE" NUMBER(8,2),
+	"HORAS" NUMBER(*,0),
+	"PUESTO" VARCHAR2(64 BYTE),
+	"RETENCIONES" NUMBER(*,0),
+	"EMAIL" VARCHAR2(64 BYTE),
+	"USUARIO" VARCHAR2(32 BYTE)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table EXAMEN
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."EXAMEN"
+   (	"ESTADO" VARCHAR2(1024 BYTE),
+	"CATEGORIA_IDCATEGORIA" NUMBER(*,0),
+	"MANTENIMIENTO_IDSERVICIO" NUMBER(*,0)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table FACTURA
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."FACTURA"
+   (	"IDFACTURA" NUMBER(*,0),
+	"CLIENTE_IDCLIENTE" VARCHAR2(16 BYTE),
+	"IVA" NUMBER(*,0) DEFAULT 21,
+	"FECEMISION" DATE,
+	"DESCUENTO" NUMBER(*,0) DEFAULT 0,
+	"EMPLEADO_IDEMPLEADO" VARCHAR2(16 BYTE),
+	"IVA_CALCULADO" NUMBER DEFAULT 0,
+	"TOTAL" NUMBER DEFAULT 0
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table FIDELIZACION
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."FIDELIZACION"
+   (	"CLIENTE_IDCLIENTE" VARCHAR2(16 BYTE),
+	"DESCUENTO" NUMBER(3,0),
+	"ANNO" NUMBER(4,0)
+   ) SEGMENT CREATION DEFERRED
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Table LOTE
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."LOTE"
+   (	"NUMERO_DE_PIEZAS" NUMBER(*,0),
+	"PIEZA_CODREF" VARCHAR2(16 BYTE),
+	"COMPRA_IDCOMPRA" NUMBER(*,0),
+	"IVA" NUMBER(*,0)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table MANTENIMIENTO
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."MANTENIMIENTO"
+   (	"IDSERVICIO" NUMBER(*,0),
+	"FECPROXREVISION" DATE
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table MARCA
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."MARCA"
+   (	"IDMARCA" NUMBER(*,0),
+	"NOMBRE" VARCHAR2(128 BYTE),
+	"PRECIOHORA" NUMBER(6,2)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table MODELO
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."MODELO"
+   (	"IDMODELO" NUMBER(*,0),
+	"MARCA_IDMARCA" NUMBER(*,0),
+	"NOMBRE" VARCHAR2(128 BYTE),
+	"NUMPUERTAS" NUMBER,
+	"COMBUSTIBLE" VARCHAR2(64 BYTE),
+	"CAPACMALETERO" NUMBER(*,0)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table NECESITA
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."NECESITA"
+   (	"PIEZA" VARCHAR2(16 BYTE),
+	"REPARACION" NUMBER
+   ) SEGMENT CREATION DEFERRED
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table PIEZA
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."PIEZA"
+   (	"CODREF" VARCHAR2(16 BYTE),
+	"NOMBRE" VARCHAR2(128 BYTE),
+	"PRECIOUNIDADVENTA" NUMBER(8,2),
+	"PRECIOUNIDADCOMPRA" NUMBER(8,2),
+	"CANTIDAD" NUMBER(*,0),
+	"FECCADUCIDAD" DATE,
+	"PROVEEDOR_NIF" VARCHAR2(16 BYTE)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table PROVEE
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."PROVEE"
+   (	"PROVEEDOR_NIF" VARCHAR2(16 BYTE),
+	"PIEZA_CODREF" VARCHAR2(16 BYTE)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table PROVEEDOR
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."PROVEEDOR"
+   (	"NIF" VARCHAR2(16 BYTE),
+	"TELEFONO" NUMBER(*,0),
+	"NOMBRE" VARCHAR2(64 BYTE),
+	"EMAIL" VARCHAR2(64 BYTE),
+	"DIRECCION" VARCHAR2(256 BYTE),
+	"CODPOSTAL" NUMBER(*,0),
+	"WEB" VARCHAR2(128 BYTE)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table REPARACION
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."REPARACION"
+   (	"IDSERVICIO" NUMBER(*,0),
+	"MOTIVO" VARCHAR2(1024 BYTE),
+	"HORAS" NUMBER(6,2)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table REQUIERE
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."REQUIERE"
+   (	"PIEZA_CODREF" VARCHAR2(16 BYTE),
+	"EXAMEN_CATEGORIA_IDCATEGORIA" NUMBER(*,0)
+   ) SEGMENT CREATION DEFERRED
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table SERVICIO
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."SERVICIO"
+   (	"IDSERVICIO" NUMBER(*,0),
+	"ESTADO" VARCHAR2(64 BYTE),
+	"FECAPERTURA" DATE,
+	"FECRECEPCION" DATE,
+	"FECREALIZACION" DATE,
+	"OBSCHAPA" VARCHAR2(1024 BYTE),
+	"VEHICULO_NUMBASTIDOR" VARCHAR2(64 BYTE),
+	"EFECTIVIDAD" NUMBER(*,0)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table TRABAJA
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."TRABAJA"
+   (	"EMPLEADO_IDEMPLEADO" VARCHAR2(16 BYTE),
+	"SERVICIO_IDSERVICIO" NUMBER(*,0)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table VACACIONES
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."VACACIONES"
+   (	"IDENTIFICADOR" NUMBER(*,0),
+	"FECENTRADA" DATE,
+	"FECSALIDA" DATE,
+	"CONCEDIDO" NUMBER,
+	"EMPLEADO_IDEMPLEADO" VARCHAR2(16 BYTE)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Table VEHICULO
+--------------------------------------------------------
+
+  CREATE TABLE "AUTORACLE"."VEHICULO"
+   (	"NUMBASTIDOR" VARCHAR2(64 BYTE),
+	"MATRICULA" VARCHAR2(16 BYTE),
+	"FABRICACION" NUMBER(*,0),
+	"MODELO_IDMODELO" NUMBER(*,0),
+	"MODELO_MARCA_IDMARCA" NUMBER(*,0),
+	"CLIENTE_IDCLIENTE" VARCHAR2(16 BYTE),
+	"KILOMETRAJE" NUMBER(*,0)
+   ) SEGMENT CREATION IMMEDIATE
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"   NO INMEMORY ;
+--------------------------------------------------------
+--  DDL for Sequence SEC_IDEMPLEADO
+--------------------------------------------------------
+
+   CREATE SEQUENCE  "AUTORACLE"."SEC_IDEMPLEADO"  MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 10000 CACHE 20 NOORDER  NOCYCLE  NOKEEP  NOSCALE  GLOBAL ;
+REM INSERTING into AUTORACLE.CATEGORIA
+SET DEFINE OFF;
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('21','Junta de la culata');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('23','Turbo');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('6','Aceite');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('7','Suspension');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('8','Alineacion');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('9','Frenos');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('10','Cinturones de seguridad');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('11','Aire acondicionado');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('12','Airbag');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('13','Luna');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('14','Escape');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('15','Iluminacion');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('16','Audio');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('17','Llantas');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('18','Transmision');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('19','Refrigeracion');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('100','Tapiceria');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('101','Salpicadero');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('1','Filtros');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('2','Chapa');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('3','Motor');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('4','Electricidad');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('5','Neumaticos');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('20','Limpiaparabrisas');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('22','Retrovisores');
+REM INSERTING into AUTORACLE.CITA
+SET DEFINE OFF;
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('12',to_date('22/03/20','DD/MM/RR'),to_date('22/04/20','DD/MM/RR'),'12');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('13',to_date('25/04/22','DD/MM/RR'),to_date('04/05/20','DD/MM/RR'),'14');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('3',to_date('10/03/20','DD/MM/RR'),to_date('16/03/20','DD/MM/RR'),'16');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('1',to_date('10/02/20','DD/MM/RR'),to_date('17/02/20','DD/MM/RR'),'777');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('2',to_date('20/03/20','DD/MM/RR'),to_date('03/04/20','DD/MM/RR'),'2');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('4',to_date('29/02/20','DD/MM/RR'),to_date('03/03/20','DD/MM/RR'),'99');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('5',to_date('13/03/20','DD/MM/RR'),to_date('16/03/20','DD/MM/RR'),'123');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('6',to_date('10/03/20','DD/MM/RR'),to_date('13/03/20','DD/MM/RR'),'44');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('7',to_date('24/03/20','DD/MM/RR'),to_date('02/04/20','DD/MM/RR'),'111');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('8',to_date('25/03/20','DD/MM/RR'),to_date('06/04/20','DD/MM/RR'),'666');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('9',to_date('18/02/20','DD/MM/RR'),to_date('22/03/20','DD/MM/RR'),'22');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('10',to_date('13/03/20','DD/MM/RR'),to_date('11/04/20','DD/MM/RR'),'69');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('16',to_date('31/03/20','DD/MM/RR'),to_date('30/04/20','DD/MM/RR'),'909');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('11',to_date('18/03/20','DD/MM/RR'),to_date('19/04/20','DD/MM/RR'),'465');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('14',to_date('24/02/20','DD/MM/RR'),to_date('03/03/20','DD/MM/RR'),'0404');
+Insert into AUTORACLE.CITA (IDCITA,FECHA_SOLICITUD,FECHA_CONCERTADA,CLIENTE_IDCLIENTE) values ('15',to_date('27/03/20','DD/MM/RR'),to_date('20/04/20','DD/MM/RR'),'42');
+REM INSERTING into AUTORACLE.CLIENTE
+SET DEFINE OFF;
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('290','611765645','Pepe','Pepito','Pepon','pepe@pepon.es',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('200','678564565','Luis ','Barcenas',null,'luis@pp.es',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('300','666786754','Juan','Munoz','Carrera','jmc@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('50','698765612','Ana Mari','Zapata','Camello','anamari@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('12','685394323','Julio','Fernandez','Dias','eljuli@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('14','659234002','David','Broncano','Aguilera','davidBronca@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('236','654768997','Peter','Griffin',null,'PeterG@Quahog.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('789','789456123','Homer','Simpson',null,'simpsonh@spr.apu',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('16','777161011','Brandon','Sanderson',null,'sanderson@cosmere.god',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('2222','666666666','Maria','Garcia','Sanchez','maria@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('777','648246880','Samuel','de Luque','Batuecas','samu@ytmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('545','711720845','Guillermo','Diaz','Ibaez','willy@ytmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('420','675850648','Santiago','Abascal','Conde','santi@vox.es',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('2','684384384','Pablo','Iglesias','Turron','iglesias@galapagar.es',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('3','686486878','Leticia','Trolera',null,'leticia@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('123','635571927','Juan','Cantero','Ruiz','juancr@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('99','645187931','Marta','Lopez','Vega','marlove@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('44','688098987','Maria','Sanchez','perez','mari@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('22','672341298','Pedro','Arenales','Garcia','pedroAG@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('666','620181666','Elena','Garcia','Castro','eleniita@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('13','644875236','Daniel','Algaba','Arcila','theemperor@hotmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('69','684872654','Joseph','Joestar',null,'theripple@hotmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('77','699677888','Elm','Cherto','Gallostra','sisplau@twitch.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('1234','606339427','Ramiro','Caceres','Murillo','ram@protonmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('909','678543210','Paco','ElTaco',null,'paquito@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('111','666555444','Victor','Mento',null,'vmento@ggm.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('222','654322111','Lola','Mento',null,'lola@sumail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('375','678345237','Rigoberto','Gonzaga','Ramirez','rigogonra@yahoo.es',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('788','648234512','Marge','Simpson',null,null,null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('790','648234512','Marge','Simpson',null,null,null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('465','679825713','Juan','Romero','Soto','juanito@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('0404','687321002','Jaime','Perez','Ramirez','JPR12@outloock.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('42','601256688','Bryan','Israel',null,'fpjudea@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('8','617802055','Lucia','Sanz','Perez','lucilu88@gmail.com',null);
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL,USUARIO) values ('1','674342310','Ruben','Salazar','Castillo','rsc@gmail.com',null);
+REM INSERTING into AUTORACLE.COMPATIBLE
+SET DEFINE OFF;
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('111240','28','5');
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('111240','29','5');
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('111241','28','5');
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('111241','29','5');
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('12345','14','12');
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('12345','15','12');
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('12345','16','14');
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('12345','17','14');
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('12345','18','15');
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('12345','19','15');
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('227562','22','3');
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('234356','19','15');
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('345676','16','14');
+Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('89542','3','7');
+REM INSERTING into AUTORACLE.COMPRA
+SET DEFINE OFF;
+Insert into AUTORACLE.COMPRA (IDCOMPRA,FECEMISION,PROVEEDOR_NIF,FECRECEPCION) values ('1',to_date('13/02/20','DD/MM/RR'),'c745269',to_date('16/02/20','DD/MM/RR'));
+Insert into AUTORACLE.COMPRA (IDCOMPRA,FECEMISION,PROVEEDOR_NIF,FECRECEPCION) values ('2',to_date('19/02/20','DD/MM/RR'),'c123312',to_date('21/02/20','DD/MM/RR'));
+Insert into AUTORACLE.COMPRA (IDCOMPRA,FECEMISION,PROVEEDOR_NIF,FECRECEPCION) values ('3',to_date('03/03/20','DD/MM/RR'),'c806764',to_date('06/03/20','DD/MM/RR'));
+Insert into AUTORACLE.COMPRA (IDCOMPRA,FECEMISION,PROVEEDOR_NIF,FECRECEPCION) values ('4',to_date('20/03/20','DD/MM/RR'),'c564218',to_date('05/04/20','DD/MM/RR'));
+Insert into AUTORACLE.COMPRA (IDCOMPRA,FECEMISION,PROVEEDOR_NIF,FECRECEPCION) values ('5',to_date('12/03/20','DD/MM/RR'),'a1234',to_date('20/03/20','DD/MM/RR'));
+Insert into AUTORACLE.COMPRA (IDCOMPRA,FECEMISION,PROVEEDOR_NIF,FECRECEPCION) values ('6',to_date('23/03/20','DD/MM/RR'),'g456723',null);
+Insert into AUTORACLE.COMPRA (IDCOMPRA,FECEMISION,PROVEEDOR_NIF,FECRECEPCION) values ('7',to_date('14/01/20','DD/MM/RR'),'t389544',to_date('04/02/20','DD/MM/RR'));
+Insert into AUTORACLE.COMPRA (IDCOMPRA,FECEMISION,PROVEEDOR_NIF,FECRECEPCION) values ('8',to_date('24/03/20','DD/MM/RR'),'a1234',null);
+Insert into AUTORACLE.COMPRA (IDCOMPRA,FECEMISION,PROVEEDOR_NIF,FECRECEPCION) values ('9',to_date('25/03/20','DD/MM/RR'),'mi20204',to_date('27/03/20','DD/MM/RR'));
+Insert into AUTORACLE.COMPRA (IDCOMPRA,FECEMISION,PROVEEDOR_NIF,FECRECEPCION) values ('10',to_date('25/02/20','DD/MM/RR'),'c56984',to_date('26/06/20','DD/MM/RR'));
+REM INSERTING into AUTORACLE.COMPRA_FUTURA
+SET DEFINE OFF;
+REM INSERTING into AUTORACLE.CONTIENE
+SET DEFINE OFF;
+Insert into AUTORACLE.CONTIENE (FACTURA_IDFACTURA,PIEZA_CODREF) values ('1','111234');
+Insert into AUTORACLE.CONTIENE (FACTURA_IDFACTURA,PIEZA_CODREF) values ('1','111235');
+Insert into AUTORACLE.CONTIENE (FACTURA_IDFACTURA,PIEZA_CODREF) values ('2','111236');
+Insert into AUTORACLE.CONTIENE (FACTURA_IDFACTURA,PIEZA_CODREF) values ('2','12345');
+Insert into AUTORACLE.CONTIENE (FACTURA_IDFACTURA,PIEZA_CODREF) values ('3','12345');
+Insert into AUTORACLE.CONTIENE (FACTURA_IDFACTURA,PIEZA_CODREF) values ('5','111234');
+Insert into AUTORACLE.CONTIENE (FACTURA_IDFACTURA,PIEZA_CODREF) values ('5','111235');
+Insert into AUTORACLE.CONTIENE (FACTURA_IDFACTURA,PIEZA_CODREF) values ('20','227562');
+REM INSERTING into AUTORACLE.EMPLEADO
+SET DEFINE OFF;
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('13','Juan','Bolsonaro',null,to_date('25/03/20','DD/MM/RR'),'0','2000','45','Administrativo','2',null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('14','Magdalena','Rebollo','Hornada',to_date('12/02/20','DD/MM/RR'),'0','1345','40','Aux. Administrativo','1',null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('15','Esperanza','Corona ','Vir',to_date('01/01/20','DD/MM/RR'),'0','1500','40','Mecanico',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('16','Jose','Rodriguez',null,to_date('24/01/20','DD/MM/RR'),'1','900','25','Asistente_Mecanica',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('117','Emiliano','Lopez','Martin',to_date('22/01/19','DD/MM/RR'),'0','900','40','Mecanico',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('23','Felipe','Sexto','Brobén',to_date('22/03/20','DD/MM/RR'),'1','1100','35','Administrativo',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('1','Enrique','Soler','Castillo',to_date('01/01/20','DD/MM/RR'),'0','1100','40',null,null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('3','Ricardo','Diaz','Bartual',to_date('10/03/20','DD/MM/RR'),'0','975','40','Mecanico',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('4','Marina','Nunier','Osuna',to_date('03/02/20','DD/MM/RR'),'0','1050','40',null,null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('5','Rosa','Hidalgo','Bujalance',to_date('02/03/20','DD/MM/RR'),'0','1095','40',null,null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('6','Carmen','Lopez','Fernandez',to_date('20/03/20','DD/MM/RR'),'0','1000','40','recepcion',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('7','Lola','Sanchez','Pérez',to_date('12/02/20','DD/MM/RR'),'0','1150','40','Mecanico',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('8','Augusto','Abascal','Aceituno',to_date('05/07/19','DD/MM/RR'),'0','1125','40','Mecanico',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('9','Eduardo','Elric',null,to_date('10/04/18','DD/MM/RR'),'0','800','40','Asistente_Mecanica',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('10','Benito Antonio','Martinez','Ocasio',to_date('25/03/20','DD/MM/RR'),'0','2000','20','Gerente',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('17','Kobe','Bryant','Perez',to_date('28/03/20','DD/MM/RR'),'0','3500','7','CEO',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('11','Adafrasio','Urriaga','Sandemetrio',to_date('25/03/20','DD/MM/RR'),'0','1200','40','Mecanico',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('12','Abuelo','Simpson',null,to_date('25/03/20','DD/MM/RR'),'1','500','10','Mecanico',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('2552','Alberto','Molina','Pecado',to_date('01/01/20','DD/MM/RR'),'0','1200','35','Limpiador',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('42','David','Fistro','Pisto',to_date('20/02/20','DD/MM/RR'),'0','1530','40','Aux. Administrativo',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('140','Ahri','Aguayo','Sanz',to_date('28/03/20','DD/MM/RR'),'0','1800','40','Aux. Administrativo',null,null,null);
+Insert into AUTORACLE.EMPLEADO (IDEMPLEADO,NOMBRE,APELLIDO1,APELLIDO2,FECENTRADA,DESPEDIDO,SUELDOBASE,HORAS,PUESTO,RETENCIONES,EMAIL,USUARIO) values ('2','Miguel','Molina','Martín',to_date('23/03/20','DD/MM/RR'),'0','1125','40',null,null,null,null);
+REM INSERTING into AUTORACLE.EXAMEN
+SET DEFINE OFF;
+Insert into AUTORACLE.EXAMEN (ESTADO,CATEGORIA_IDCATEGORIA,MANTENIMIENTO_IDSERVICIO) values ('Averiada','7','221');
+Insert into AUTORACLE.EXAMEN (ESTADO,CATEGORIA_IDCATEGORIA,MANTENIMIENTO_IDSERVICIO) values ('Rota','13','221');
+Insert into AUTORACLE.EXAMEN (ESTADO,CATEGORIA_IDCATEGORIA,MANTENIMIENTO_IDSERVICIO) values ('Fallando','2','67');
+Insert into AUTORACLE.EXAMEN (ESTADO,CATEGORIA_IDCATEGORIA,MANTENIMIENTO_IDSERVICIO) values ('Desgaste','4','23');
+Insert into AUTORACLE.EXAMEN (ESTADO,CATEGORIA_IDCATEGORIA,MANTENIMIENTO_IDSERVICIO) values ('Cambio','6','23');
+Insert into AUTORACLE.EXAMEN (ESTADO,CATEGORIA_IDCATEGORIA,MANTENIMIENTO_IDSERVICIO) values ('Fundida','15','23');
+REM INSERTING into AUTORACLE.FACTURA
+SET DEFINE OFF;
+Insert into AUTORACLE.FACTURA (IDFACTURA,CLIENTE_IDCLIENTE,IVA,FECEMISION,DESCUENTO,EMPLEADO_IDEMPLEADO,IVA_CALCULADO,TOTAL) values ('6','12','21',to_date('22/04/20','DD/MM/RR'),'0','8','0','0');
+Insert into AUTORACLE.FACTURA (IDFACTURA,CLIENTE_IDCLIENTE,IVA,FECEMISION,DESCUENTO,EMPLEADO_IDEMPLEADO,IVA_CALCULADO,TOTAL) values ('20','777','21',to_date('17/02/20','DD/MM/RR'),'0','1','0','0');
+Insert into AUTORACLE.FACTURA (IDFACTURA,CLIENTE_IDCLIENTE,IVA,FECEMISION,DESCUENTO,EMPLEADO_IDEMPLEADO,IVA_CALCULADO,TOTAL) values ('1','123','21',to_date('21/02/20','DD/MM/RR'),'0','2','0','0');
+Insert into AUTORACLE.FACTURA (IDFACTURA,CLIENTE_IDCLIENTE,IVA,FECEMISION,DESCUENTO,EMPLEADO_IDEMPLEADO,IVA_CALCULADO,TOTAL) values ('2','545','21',to_date('26/02/20','DD/MM/RR'),'0','3','0','0');
+Insert into AUTORACLE.FACTURA (IDFACTURA,CLIENTE_IDCLIENTE,IVA,FECEMISION,DESCUENTO,EMPLEADO_IDEMPLEADO,IVA_CALCULADO,TOTAL) values ('3','22','21',to_date('12/03/20','DD/MM/RR'),'0','5','0','0');
+Insert into AUTORACLE.FACTURA (IDFACTURA,CLIENTE_IDCLIENTE,IVA,FECEMISION,DESCUENTO,EMPLEADO_IDEMPLEADO,IVA_CALCULADO,TOTAL) values ('5','44','21',to_date('12/02/20','DD/MM/RR'),'0','6','0','0');
+Insert into AUTORACLE.FACTURA (IDFACTURA,CLIENTE_IDCLIENTE,IVA,FECEMISION,DESCUENTO,EMPLEADO_IDEMPLEADO,IVA_CALCULADO,TOTAL) values ('243','0404','21',to_date('03/03/20','DD/MM/RR'),'10','1','0','0');
+Insert into AUTORACLE.FACTURA (IDFACTURA,CLIENTE_IDCLIENTE,IVA,FECEMISION,DESCUENTO,EMPLEADO_IDEMPLEADO,IVA_CALCULADO,TOTAL) values ('8','8','21',to_date('12/04/20','DD/MM/RR'),'30','140','0','0');
+REM INSERTING into AUTORACLE.FIDELIZACION
+SET DEFINE OFF;
+REM INSERTING into AUTORACLE.LOTE
+SET DEFINE OFF;
+Insert into AUTORACLE.LOTE (NUMERO_DE_PIEZAS,PIEZA_CODREF,COMPRA_IDCOMPRA,IVA) values ('15','1234','3','21');
+Insert into AUTORACLE.LOTE (NUMERO_DE_PIEZAS,PIEZA_CODREF,COMPRA_IDCOMPRA,IVA) values ('5','227562','1','21');
+Insert into AUTORACLE.LOTE (NUMERO_DE_PIEZAS,PIEZA_CODREF,COMPRA_IDCOMPRA,IVA) values ('10','12345','4','21');
+Insert into AUTORACLE.LOTE (NUMERO_DE_PIEZAS,PIEZA_CODREF,COMPRA_IDCOMPRA,IVA) values ('8','111235','2','21');
+REM INSERTING into AUTORACLE.MANTENIMIENTO
+SET DEFINE OFF;
+Insert into AUTORACLE.MANTENIMIENTO (IDSERVICIO,FECPROXREVISION) values ('221',to_date('17/02/21','DD/MM/RR'));
+Insert into AUTORACLE.MANTENIMIENTO (IDSERVICIO,FECPROXREVISION) values ('12',to_date('18/10/20','DD/MM/RR'));
+Insert into AUTORACLE.MANTENIMIENTO (IDSERVICIO,FECPROXREVISION) values ('23',to_date('23/03/21','DD/MM/RR'));
+Insert into AUTORACLE.MANTENIMIENTO (IDSERVICIO,FECPROXREVISION) values ('67',to_date('23/09/20','DD/MM/RR'));
+REM INSERTING into AUTORACLE.MARCA
+SET DEFINE OFF;
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('18','Fiat','35');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('13','Ford','35');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('16','Jeep','50');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('21','Kia','20');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('22','Mitsubishi','30');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('23','Volvo','45');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('24','Skoda','25');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('25','Tesla','75');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('77','Audi','61');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('5','BMW','100');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('6','Honda','35');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('7','Dacia','5');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('8','Chrysler','30');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('9','Volkswagen','25');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('10','Hyundai','50');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('11','Mercedes','110');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('4','Hurtan','25');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('19','Peugeot','30');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('12','Alfa Romeo','45');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('14','Reanult','35');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('15','Toyota','40');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('78','Lamborghini','350');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('1100','Cadillac','85');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('101','Aston Martin','125');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('1','Opel','40');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('2','Seat','40');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('3','Ferrari','200');
+Insert into AUTORACLE.MARCA (IDMARCA,NOMBRE,PRECIOHORA) values ('20','Citroen','10');
+REM INSERTING into AUTORACLE.MODELO
+SET DEFINE OFF;
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('14','12','Giulia','5','Gasolina','400');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('15','12','Giulietta quadrifoglio','3','Gasolina','300');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('16','14','Megane','5','Diesel','350');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('17','14','Clio','3','Diesel','200');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('18','15','Auris','5','Gasolina','350');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('19','15','Yaris','3','Gasolina','199');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('20','19','207','3','Diesel','205');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('21','19','308','5','Diesel','350');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('26','24','Fabia','5','Diesel','250');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('27','25','Model 3','5','Electrico','300');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('69','1','Astra gtc','3','Diesel','360');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('77','77','A3','5','Gasolina','320');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('1234','19','206','5','Diesel','200');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('1233','1','Crossland X','5','Diesel','420');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('33','5','M8 Coupe','3','Gasolina','420');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('22','3','812 Superfast','3','Gasolina',null);
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('3','7','Sandero','5','Gasolina','300');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('4','7','Duster','5','Diesel','280');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('5','2','Ibiza','5','Gasolina','200');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('6','2','Cordoba','5','Gasolina','185');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('7','2','Panda','3','Gasolina','75');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('8','1','Astra','4','Gasolina','350');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('9','9','Passat','5','Diesel','400');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('10','8','Voyager','5','Diesel','350');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('11','10','i10','5','Gasolina','152');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('12','11','CDI ELEGANCE','5','Diesel','150');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('13','11','Velantur','2','Diesel','250');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('78','78','Huracan','3','Gasolina','100');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('1','1','Corsa 3p','3','Gasolina','300');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('2','2','Leon','5',null,null);
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('32','20','C3','5','Diesel','410');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('28','5','Serie1 118i','5','Gasolina','380');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('29','5','Serie2 220d Gran Coupe','5','Diesel','430');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('30','16','Wrangler','3','Diesel','100');
+Insert into AUTORACLE.MODELO (IDMODELO,MARCA_IDMARCA,NOMBRE,NUMPUERTAS,COMBUSTIBLE,CAPACMALETERO) values ('31','16','Compass','5','Gasolina','230');
+REM INSERTING into AUTORACLE.NECESITA
+SET DEFINE OFF;
+REM INSERTING into AUTORACLE.PIEZA
+SET DEFINE OFF;
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('123498','Espejo derecho Pugeot 207','65','50','2',to_date('26/05/20','DD/MM/RR'),'c745269');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('123499','Espejo izquierdo Peugeot 207','65','50','2',to_date('26/05/20','DD/MM/RR'),'c745269');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('345676','Bomba Agua Clio','120','80','4',to_date('26/05/20','DD/MM/RR'),'t389544');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('234356','Injector Auris','180','150','8',to_date('27/05/20','DD/MM/RR'),'c564218');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('1234','Embrague','1200','800','5',to_date('27/05/20','DD/MM/RR'),'a1234');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('111242','Motor','1300','840','5',to_date('27/05/20','DD/MM/RR'),'a1234');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('227562','Suspension 812 Superfast','200','150','10',to_date('28/05/20','DD/MM/RR'),'c745269');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('111236','Amortiguador delantero opel astra','200','150','15',to_date('28/05/20','DD/MM/RR'),'c123312');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('12345','pastilla de freno delantera','100','50','20',to_date('28/05/20','DD/MM/RR'),'a1234');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('12326','Filtro de aceite','10','5','60',to_date('29/05/20','DD/MM/RR'),'t389544');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('89542','Caja de cambio','400','200','12',to_date('29/05/20','DD/MM/RR'),'c564218');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('15548','Luna Trasera Hyundai Matrix','400','200','12',to_date('29/05/20','DD/MM/RR'),'t389544');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('15547','Luna Delantera Hyundai Matrix','300','150','14',to_date('19/02/20','DD/MM/RR'),'t389544');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('111234','Faro delantero dercho opel Corsa','100','50','20',to_date('02/09/17','DD/MM/RR'),'c123312');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('111235','Faro delantero izdo opel Corsa','100','49','20',to_date('29/05/21','DD/MM/RR'),'c123312');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('ma55129','Tubo de escape Modelo golf','120','80','8',to_date('29/05/21','DD/MM/RR'),'c745269');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('111238','Neumatico tubeless Jeep Wrangler','112','70','8',to_date('29/05/21','DD/MM/RR'),'c56984');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('111239','Neumatico Invierno Jeep Compass','196','145','8',to_date('29/05/21','DD/MM/RR'),'c56984');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('111240','Aceite de motor BMW Turbo Silver','45','30','4',to_date('29/05/21','DD/MM/RR'),'mi20204');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('111241','Aceite de motor BMW Turbo Gold','60','40','4',to_date('29/05/21','DD/MM/RR'),'mi20204');
+Insert into AUTORACLE.PIEZA (CODREF,NOMBRE,PRECIOUNIDADVENTA,PRECIOUNIDADCOMPRA,CANTIDAD,FECCADUCIDAD,PROVEEDOR_NIF) values ('123444','Volante Peugeot 207','300','250','3',to_date('29/05/21','DD/MM/RR'),'c745269');
+REM INSERTING into AUTORACLE.PROVEE
+SET DEFINE OFF;
+Insert into AUTORACLE.PROVEE (PROVEEDOR_NIF,PIEZA_CODREF) values ('c123312','111234');
+Insert into AUTORACLE.PROVEE (PROVEEDOR_NIF,PIEZA_CODREF) values ('c123312','111235');
+Insert into AUTORACLE.PROVEE (PROVEEDOR_NIF,PIEZA_CODREF) values ('c564218','89542');
+Insert into AUTORACLE.PROVEE (PROVEEDOR_NIF,PIEZA_CODREF) values ('c56984','111238');
+Insert into AUTORACLE.PROVEE (PROVEEDOR_NIF,PIEZA_CODREF) values ('c56984','111239');
+Insert into AUTORACLE.PROVEE (PROVEEDOR_NIF,PIEZA_CODREF) values ('c745269','227562');
+Insert into AUTORACLE.PROVEE (PROVEEDOR_NIF,PIEZA_CODREF) values ('g456723','123498');
+Insert into AUTORACLE.PROVEE (PROVEEDOR_NIF,PIEZA_CODREF) values ('g456723','123499');
+Insert into AUTORACLE.PROVEE (PROVEEDOR_NIF,PIEZA_CODREF) values ('mi20204','111240');
+Insert into AUTORACLE.PROVEE (PROVEEDOR_NIF,PIEZA_CODREF) values ('mi20204','111241');
+Insert into AUTORACLE.PROVEE (PROVEEDOR_NIF,PIEZA_CODREF) values ('t389544','12326');
+REM INSERTING into AUTORACLE.PROVEEDOR
+SET DEFINE OFF;
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c258537','655758595','Ibaez S.L.','mortadelo@filemon.es','13, Rue del Percebe','29713','mortadelo-filemon.es');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('t82832','942321234','Open Chasis S.L','chasisabiertos@mas.com','C/ Espana 32','29008','chasisaunmasabiertos.cha');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c745269','9018523','Caballo S.L.','ventas@caballo.xyz',null,null,'caballo.xyz');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c806764','7550822','Residente S.L','ingenio@lmao.com','C/ 13',null,'residente.xxx');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c4568731','353040036','Criss S.L','cristi3009@hotmail.es','C/Alameda 23','29006','gatita.es');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('a1234','676565432','Union S.L','info@union.es','Avenida Velazquez 20','29004','union.es');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c564218','731895467','Costa del Sol','costaSol@gmail.com','c/Horacio lengo 45','29006','CostaDelSol.com');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('t389544','951454721','Porrazos S.A.','porrazos@prz.es','C/Marques de Larios 8','29018','porrazosymas.com');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('a123456','542368956','CocheListo S:L','cochelisto@sol.es','Av. Novigrado','29601','cochelisto.com');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c123312','9524567','Rompetechos S.A.','info@rompetechos.es',null,null,null);
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('g456723','987653456','Uno mas S.A.','info@unomas.es','C/ accidentada','29876','unomas.es');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c521556','952150978','Para El Arrastre S. A.','para@arrastre.es','C/ Suertudos 42','29012','pararrastranos.es');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('ma55129','952793856','Coronavirus S.L','pandemia2020@gmail.com','C/ Todo el mundo 22','29010','coronavirusAllwaysWin.es');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('mi20204','952745984','Midas S.L','midas@rec.com','C/Ferrocarril 56','29065','midas.com');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c56984','952365698','N.Ambrosio S.A','info@ambrosio.es','C/Felipe II','29056','Nambrosio.es');
+REM INSERTING into AUTORACLE.REPARACION
+SET DEFINE OFF;
+Insert into AUTORACLE.REPARACION (IDSERVICIO,MOTIVO,HORAS) values ('221','Muelle Rajado','4');
+Insert into AUTORACLE.REPARACION (IDSERVICIO,MOTIVO,HORAS) values ('12','Frenos Inutilizados','3');
+Insert into AUTORACLE.REPARACION (IDSERVICIO,MOTIVO,HORAS) values ('18','Gripado motor','16');
+Insert into AUTORACLE.REPARACION (IDSERVICIO,MOTIVO,HORAS) values ('45','Accidente','0');
+REM INSERTING into AUTORACLE.REQUIERE
+SET DEFINE OFF;
+REM INSERTING into AUTORACLE.SERVICIO
+SET DEFINE OFF;
+Insert into AUTORACLE.SERVICIO (IDSERVICIO,ESTADO,FECAPERTURA,FECRECEPCION,FECREALIZACION,OBSCHAPA,VEHICULO_NUMBASTIDOR,EFECTIVIDAD) values ('221','Reparar',to_date('10/02/20','DD/MM/RR'),to_date('10/02/20','DD/MM/RR'),to_date('16/02/20','DD/MM/RR'),'Correcta','4658464',null);
+Insert into AUTORACLE.SERVICIO (IDSERVICIO,ESTADO,FECAPERTURA,FECRECEPCION,FECREALIZACION,OBSCHAPA,VEHICULO_NUMBASTIDOR,EFECTIVIDAD) values ('12','Reparar',to_date('10/03/20','DD/MM/RR'),to_date('11/03/20','DD/MM/RR'),to_date('11/03/20','DD/MM/RR'),'correcta','234321',null);
+Insert into AUTORACLE.SERVICIO (IDSERVICIO,ESTADO,FECAPERTURA,FECRECEPCION,FECREALIZACION,OBSCHAPA,VEHICULO_NUMBASTIDOR,EFECTIVIDAD) values ('18','Reparar',to_date('22/03/20','DD/MM/RR'),to_date('22/03/20','DD/MM/RR'),to_date('29/03/20','DD/MM/RR'),'Correcta','632458',null);
+Insert into AUTORACLE.SERVICIO (IDSERVICIO,ESTADO,FECAPERTURA,FECRECEPCION,FECREALIZACION,OBSCHAPA,VEHICULO_NUMBASTIDOR,EFECTIVIDAD) values ('1','Arreglado',to_date('15/03/20','DD/MM/RR'),to_date('15/03/20','DD/MM/RR'),to_date('25/04/20','DD/MM/RR'),'Correcta','234321','10');
+Insert into AUTORACLE.SERVICIO (IDSERVICIO,ESTADO,FECAPERTURA,FECRECEPCION,FECREALIZACION,OBSCHAPA,VEHICULO_NUMBASTIDOR,EFECTIVIDAD) values ('45','Espera',to_date('02/02/20','DD/MM/RR'),to_date('04/02/20','DD/MM/RR'),null,'Mal','23876512',null);
+Insert into AUTORACLE.SERVICIO (IDSERVICIO,ESTADO,FECAPERTURA,FECRECEPCION,FECREALIZACION,OBSCHAPA,VEHICULO_NUMBASTIDOR,EFECTIVIDAD) values ('23','Finalizado',to_date('23/03/20','DD/MM/RR'),to_date('23/03/20','DD/MM/RR'),to_date('23/03/20','DD/MM/RR'),'Correcta','54675432',null);
+Insert into AUTORACLE.SERVICIO (IDSERVICIO,ESTADO,FECAPERTURA,FECRECEPCION,FECREALIZACION,OBSCHAPA,VEHICULO_NUMBASTIDOR,EFECTIVIDAD) values ('67','Reparando',to_date('26/03/20','DD/MM/RR'),to_date('26/03/20','DD/MM/RR'),null,'Correcta','21653498',null);
+REM INSERTING into AUTORACLE.TRABAJA
+SET DEFINE OFF;
+Insert into AUTORACLE.TRABAJA (EMPLEADO_IDEMPLEADO,SERVICIO_IDSERVICIO) values ('1','221');
+Insert into AUTORACLE.TRABAJA (EMPLEADO_IDEMPLEADO,SERVICIO_IDSERVICIO) values ('2','1');
+Insert into AUTORACLE.TRABAJA (EMPLEADO_IDEMPLEADO,SERVICIO_IDSERVICIO) values ('42','45');
+Insert into AUTORACLE.TRABAJA (EMPLEADO_IDEMPLEADO,SERVICIO_IDSERVICIO) values ('7','18');
+Insert into AUTORACLE.TRABAJA (EMPLEADO_IDEMPLEADO,SERVICIO_IDSERVICIO) values ('8','12');
+REM INSERTING into AUTORACLE.VACACIONES
+SET DEFINE OFF;
+Insert into AUTORACLE.VACACIONES (IDENTIFICADOR,FECENTRADA,FECSALIDA,CONCEDIDO,EMPLEADO_IDEMPLEADO) values ('7',to_date('22/05/20','DD/MM/RR'),to_date('22/06/20','DD/MM/RR'),'1','12');
+Insert into AUTORACLE.VACACIONES (IDENTIFICADOR,FECENTRADA,FECSALIDA,CONCEDIDO,EMPLEADO_IDEMPLEADO) values ('1',to_date('29/03/20','DD/MM/RR'),to_date('30/03/20','DD/MM/RR'),'0','2');
+Insert into AUTORACLE.VACACIONES (IDENTIFICADOR,FECENTRADA,FECSALIDA,CONCEDIDO,EMPLEADO_IDEMPLEADO) values ('2',to_date('29/03/20','DD/MM/RR'),to_date('31/03/20','DD/MM/RR'),'1','2');
+Insert into AUTORACLE.VACACIONES (IDENTIFICADOR,FECENTRADA,FECSALIDA,CONCEDIDO,EMPLEADO_IDEMPLEADO) values ('20',to_date('16/03/20','DD/MM/RR'),to_date('27/03/20','DD/MM/RR'),'1','2');
+Insert into AUTORACLE.VACACIONES (IDENTIFICADOR,FECENTRADA,FECSALIDA,CONCEDIDO,EMPLEADO_IDEMPLEADO) values ('22',to_date('03/04/20','DD/MM/RR'),to_date('13/04/20','DD/MM/RR'),'1','5');
+Insert into AUTORACLE.VACACIONES (IDENTIFICADOR,FECENTRADA,FECSALIDA,CONCEDIDO,EMPLEADO_IDEMPLEADO) values ('21',to_date('07/07/20','DD/MM/RR'),to_date('17/07/20','DD/MM/RR'),'1','8');
+Insert into AUTORACLE.VACACIONES (IDENTIFICADOR,FECENTRADA,FECSALIDA,CONCEDIDO,EMPLEADO_IDEMPLEADO) values ('18',to_date('15/08/20','DD/MM/RR'),to_date('30/08/20','DD/MM/RR'),'1','7');
+Insert into AUTORACLE.VACACIONES (IDENTIFICADOR,FECENTRADA,FECSALIDA,CONCEDIDO,EMPLEADO_IDEMPLEADO) values ('13',to_date('09/06/20','DD/MM/RR'),to_date('19/06/20','DD/MM/RR'),'1','1');
+Insert into AUTORACLE.VACACIONES (IDENTIFICADOR,FECENTRADA,FECSALIDA,CONCEDIDO,EMPLEADO_IDEMPLEADO) values ('32',to_date('16/03/20','DD/MM/RR'),to_date('11/04/20','DD/MM/RR'),'1','11');
+Insert into AUTORACLE.VACACIONES (IDENTIFICADOR,FECENTRADA,FECSALIDA,CONCEDIDO,EMPLEADO_IDEMPLEADO) values ('8',to_date('30/06/20','DD/MM/RR'),to_date('28/08/20','DD/MM/RR'),'1','140');
+REM INSERTING into AUTORACLE.VEHICULO
+SET DEFINE OFF;
+Insert into AUTORACLE.VEHICULO (NUMBASTIDOR,MATRICULA,FABRICACION,MODELO_IDMODELO,MODELO_MARCA_IDMARCA,CLIENTE_IDCLIENTE,KILOMETRAJE) values ('452442','2352JKL',null,'12','11','12','154340');
+Insert into AUTORACLE.VEHICULO (NUMBASTIDOR,MATRICULA,FABRICACION,MODELO_IDMODELO,MODELO_MARCA_IDMARCA,CLIENTE_IDCLIENTE,KILOMETRAJE) values ('4658464','7654ASD',null,'22','3','777','20000');
+Insert into AUTORACLE.VEHICULO (NUMBASTIDOR,MATRICULA,FABRICACION,MODELO_IDMODELO,MODELO_MARCA_IDMARCA,CLIENTE_IDCLIENTE,KILOMETRAJE) values ('78912345','1999COV',null,'9','9','123','35000');
+Insert into AUTORACLE.VEHICULO (NUMBASTIDOR,MATRICULA,FABRICACION,MODELO_IDMODELO,MODELO_MARCA_IDMARCA,CLIENTE_IDCLIENTE,KILOMETRAJE) values ('234321','2309KUB',null,'6','2','44','50000');
+Insert into AUTORACLE.VEHICULO (NUMBASTIDOR,MATRICULA,FABRICACION,MODELO_IDMODELO,MODELO_MARCA_IDMARCA,CLIENTE_IDCLIENTE,KILOMETRAJE) values ('632458','3685HDP',null,'12','11','22','110000');
+Insert into AUTORACLE.VEHICULO (NUMBASTIDOR,MATRICULA,FABRICACION,MODELO_IDMODELO,MODELO_MARCA_IDMARCA,CLIENTE_IDCLIENTE,KILOMETRAJE) values ('123456','1458JDK','4000','22','3','44','70000');
+Insert into AUTORACLE.VEHICULO (NUMBASTIDOR,MATRICULA,FABRICACION,MODELO_IDMODELO,MODELO_MARCA_IDMARCA,CLIENTE_IDCLIENTE,KILOMETRAJE) values ('1341243','8537APU',null,'6','2','790','100000');
+Insert into AUTORACLE.VEHICULO (NUMBASTIDOR,MATRICULA,FABRICACION,MODELO_IDMODELO,MODELO_MARCA_IDMARCA,CLIENTE_IDCLIENTE,KILOMETRAJE) values ('54675432','3465GCM',null,'20','19','50','132453');
+Insert into AUTORACLE.VEHICULO (NUMBASTIDOR,MATRICULA,FABRICACION,MODELO_IDMODELO,MODELO_MARCA_IDMARCA,CLIENTE_IDCLIENTE,KILOMETRAJE) values ('23876512','4523HGF','3000','14','12','290','54687');
+Insert into AUTORACLE.VEHICULO (NUMBASTIDOR,MATRICULA,FABRICACION,MODELO_IDMODELO,MODELO_MARCA_IDMARCA,CLIENTE_IDCLIENTE,KILOMETRAJE) values ('21653498','1265RTE','1276','18','15','200','900');
+Insert into AUTORACLE.VEHICULO (NUMBASTIDOR,MATRICULA,FABRICACION,MODELO_IDMODELO,MODELO_MARCA_IDMARCA,CLIENTE_IDCLIENTE,KILOMETRAJE) values ('14214561','6141FUT',null,'6','2','42','351252');
+Insert into AUTORACLE.VEHICULO (NUMBASTIDOR,MATRICULA,FABRICACION,MODELO_IDMODELO,MODELO_MARCA_IDMARCA,CLIENTE_IDCLIENTE,KILOMETRAJE) values ('1234566','2332EEE','1800','14','12','12','10000');
+REM INSERTING into AUTORACLE.V_CLIENTE_DATOS
+SET DEFINE OFF;
+REM INSERTING into AUTORACLE.V_CLIENTES_DATOS
+SET DEFINE OFF;
+Insert into AUTORACLE.V_CLIENTES_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,MATRICULA,MARCA,MODELO,KILOMETROS) values ('42',null,'Bryan','Israel',null,'601256688','fpjudea@gmail.com','6141FUT','Seat','Cordoba','351252');
+Insert into AUTORACLE.V_CLIENTES_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,MATRICULA,MARCA,MODELO,KILOMETROS) values ('44',null,'Maria','Sanchez','perez','688098987','mari@gmail.com','2309KUB','Seat','Cordoba','50000');
+Insert into AUTORACLE.V_CLIENTES_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,MATRICULA,MARCA,MODELO,KILOMETROS) values ('790',null,'Marge','Simpson',null,'648234512',null,'8537APU','Seat','Cordoba','100000');
+Insert into AUTORACLE.V_CLIENTES_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,MATRICULA,MARCA,MODELO,KILOMETROS) values ('123',null,'Juan','Cantero','Ruiz','635571927','juancr@gmail.com','1999COV','Volkswagen','Passat','35000');
+Insert into AUTORACLE.V_CLIENTES_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,MATRICULA,MARCA,MODELO,KILOMETROS) values ('12',null,'Julio','Fernandez','Dias','685394323','eljuli@gmail.com','2352JKL','Mercedes','CDI ELEGANCE','154340');
+Insert into AUTORACLE.V_CLIENTES_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,MATRICULA,MARCA,MODELO,KILOMETROS) values ('22',null,'Pedro','Arenales','Garcia','672341298','pedroAG@gmail.com','3685HDP','Mercedes','CDI ELEGANCE','110000');
+Insert into AUTORACLE.V_CLIENTES_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,MATRICULA,MARCA,MODELO,KILOMETROS) values ('12',null,'Julio','Fernandez','Dias','685394323','eljuli@gmail.com','2332EEE','Alfa Romeo','Giulia','10000');
+Insert into AUTORACLE.V_CLIENTES_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,MATRICULA,MARCA,MODELO,KILOMETROS) values ('290',null,'Pepe','Pepito','Pepon','611765645','pepe@pepon.es','4523HGF','Alfa Romeo','Giulia','54687');
+Insert into AUTORACLE.V_CLIENTES_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,MATRICULA,MARCA,MODELO,KILOMETROS) values ('200',null,'Luis ','Barcenas',null,'678564565','luis@pp.es','1265RTE','Toyota','Auris','900');
+Insert into AUTORACLE.V_CLIENTES_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,MATRICULA,MARCA,MODELO,KILOMETROS) values ('50',null,'Ana Mari','Zapata','Camello','698765612','anamari@gmail.com','3465GCM','Peugeot','207','132453');
+Insert into AUTORACLE.V_CLIENTES_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,MATRICULA,MARCA,MODELO,KILOMETROS) values ('44',null,'Maria','Sanchez','perez','688098987','mari@gmail.com','1458JDK','Ferrari','812 Superfast','70000');
+Insert into AUTORACLE.V_CLIENTES_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,MATRICULA,MARCA,MODELO,KILOMETROS) values ('777',null,'Samuel','de Luque','Batuecas','648246880','samu@ytmail.com','7654ASD','Ferrari','812 Superfast','20000');
+REM INSERTING into AUTORACLE.V_CLIENTE_SERVICIOS
+SET DEFINE OFF;
+REM INSERTING into AUTORACLE.V_CLIENTES_SERVICIOS
+SET DEFINE OFF;
+Insert into AUTORACLE.V_CLIENTES_SERVICIOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,SERVICIO,ESTADO,"FECHA DE APERTURA","FECHA DE REALIZACION","FECHA DE RECEPCION",CHAPA,EFECTIVIDAD,VEHICULO,MATRICULA,MARCA,MODELO,KILOMETROS) values ('44',null,'Maria','Sanchez','perez','688098987','mari@gmail.com','12','Reparar',to_date('10/03/20','DD/MM/RR'),to_date('11/03/20','DD/MM/RR'),to_date('11/03/20','DD/MM/RR'),'correcta',null,'234321','2309KUB','Seat','Cordoba','50000');
+Insert into AUTORACLE.V_CLIENTES_SERVICIOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,SERVICIO,ESTADO,"FECHA DE APERTURA","FECHA DE REALIZACION","FECHA DE RECEPCION",CHAPA,EFECTIVIDAD,VEHICULO,MATRICULA,MARCA,MODELO,KILOMETROS) values ('44',null,'Maria','Sanchez','perez','688098987','mari@gmail.com','1','Arreglado',to_date('15/03/20','DD/MM/RR'),to_date('25/04/20','DD/MM/RR'),to_date('15/03/20','DD/MM/RR'),'Correcta','10','234321','2309KUB','Seat','Cordoba','50000');
+Insert into AUTORACLE.V_CLIENTES_SERVICIOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,SERVICIO,ESTADO,"FECHA DE APERTURA","FECHA DE REALIZACION","FECHA DE RECEPCION",CHAPA,EFECTIVIDAD,VEHICULO,MATRICULA,MARCA,MODELO,KILOMETROS) values ('22',null,'Pedro','Arenales','Garcia','672341298','pedroAG@gmail.com','18','Reparar',to_date('22/03/20','DD/MM/RR'),to_date('29/03/20','DD/MM/RR'),to_date('22/03/20','DD/MM/RR'),'Correcta',null,'632458','3685HDP','Mercedes','CDI ELEGANCE','110000');
+Insert into AUTORACLE.V_CLIENTES_SERVICIOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,SERVICIO,ESTADO,"FECHA DE APERTURA","FECHA DE REALIZACION","FECHA DE RECEPCION",CHAPA,EFECTIVIDAD,VEHICULO,MATRICULA,MARCA,MODELO,KILOMETROS) values ('290',null,'Pepe','Pepito','Pepon','611765645','pepe@pepon.es','45','Espera',to_date('02/02/20','DD/MM/RR'),null,to_date('04/02/20','DD/MM/RR'),'Mal',null,'23876512','4523HGF','Alfa Romeo','Giulia','54687');
+Insert into AUTORACLE.V_CLIENTES_SERVICIOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,SERVICIO,ESTADO,"FECHA DE APERTURA","FECHA DE REALIZACION","FECHA DE RECEPCION",CHAPA,EFECTIVIDAD,VEHICULO,MATRICULA,MARCA,MODELO,KILOMETROS) values ('200',null,'Luis ','Barcenas',null,'678564565','luis@pp.es','67','Reparando',to_date('26/03/20','DD/MM/RR'),null,to_date('26/03/20','DD/MM/RR'),'Correcta',null,'21653498','1265RTE','Toyota','Auris','900');
+Insert into AUTORACLE.V_CLIENTES_SERVICIOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,SERVICIO,ESTADO,"FECHA DE APERTURA","FECHA DE REALIZACION","FECHA DE RECEPCION",CHAPA,EFECTIVIDAD,VEHICULO,MATRICULA,MARCA,MODELO,KILOMETROS) values ('50',null,'Ana Mari','Zapata','Camello','698765612','anamari@gmail.com','23','Finalizado',to_date('23/03/20','DD/MM/RR'),to_date('23/03/20','DD/MM/RR'),to_date('23/03/20','DD/MM/RR'),'Correcta',null,'54675432','3465GCM','Peugeot','207','132453');
+Insert into AUTORACLE.V_CLIENTES_SERVICIOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",TELEFONO,EMAIL,SERVICIO,ESTADO,"FECHA DE APERTURA","FECHA DE REALIZACION","FECHA DE RECEPCION",CHAPA,EFECTIVIDAD,VEHICULO,MATRICULA,MARCA,MODELO,KILOMETROS) values ('777',null,'Samuel','de Luque','Batuecas','648246880','samu@ytmail.com','221','Reparar',to_date('10/02/20','DD/MM/RR'),to_date('16/02/20','DD/MM/RR'),to_date('10/02/20','DD/MM/RR'),'Correcta',null,'4658464','7654ASD','Ferrari','812 Superfast','20000');
+REM INSERTING into AUTORACLE.V_EMPLEADO_DATOS
+SET DEFINE OFF;
+REM INSERTING into AUTORACLE.V_EMPLEADOS_DATOS
+SET DEFINE OFF;
+Insert into AUTORACLE.V_EMPLEADOS_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,DESPEDIDO,CONTRATADO,"SUELDO BASE",HORAS,PUESTO,RETENCIONES,VACACIONES,CONCEDIDAS,COMIENZO,FINAL) values ('1',null,'Enrique','Soler','Castillo',null,'0',to_date('01/01/20','DD/MM/RR'),'1100','40',null,null,'13','1',to_date('09/06/20','DD/MM/RR'),to_date('19/06/20','DD/MM/RR'));
+Insert into AUTORACLE.V_EMPLEADOS_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,DESPEDIDO,CONTRATADO,"SUELDO BASE",HORAS,PUESTO,RETENCIONES,VACACIONES,CONCEDIDAS,COMIENZO,FINAL) values ('11',null,'Adafrasio','Urriaga','Sandemetrio',null,'0',to_date('25/03/20','DD/MM/RR'),'1200','40','Mecanico',null,'32','1',to_date('16/03/20','DD/MM/RR'),to_date('11/04/20','DD/MM/RR'));
+Insert into AUTORACLE.V_EMPLEADOS_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,DESPEDIDO,CONTRATADO,"SUELDO BASE",HORAS,PUESTO,RETENCIONES,VACACIONES,CONCEDIDAS,COMIENZO,FINAL) values ('12',null,'Abuelo','Simpson',null,null,'1',to_date('25/03/20','DD/MM/RR'),'500','10','Mecanico',null,'7','1',to_date('22/05/20','DD/MM/RR'),to_date('22/06/20','DD/MM/RR'));
+Insert into AUTORACLE.V_EMPLEADOS_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,DESPEDIDO,CONTRATADO,"SUELDO BASE",HORAS,PUESTO,RETENCIONES,VACACIONES,CONCEDIDAS,COMIENZO,FINAL) values ('140',null,'Ahri','Aguayo','Sanz',null,'0',to_date('28/03/20','DD/MM/RR'),'1800','40','Aux. Administrativo',null,'8','1',to_date('30/06/20','DD/MM/RR'),to_date('28/08/20','DD/MM/RR'));
+Insert into AUTORACLE.V_EMPLEADOS_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,DESPEDIDO,CONTRATADO,"SUELDO BASE",HORAS,PUESTO,RETENCIONES,VACACIONES,CONCEDIDAS,COMIENZO,FINAL) values ('2',null,'Miguel','Molina','Martín',null,'0',to_date('23/03/20','DD/MM/RR'),'1125','40',null,null,'1','0',to_date('29/03/20','DD/MM/RR'),to_date('30/03/20','DD/MM/RR'));
+Insert into AUTORACLE.V_EMPLEADOS_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,DESPEDIDO,CONTRATADO,"SUELDO BASE",HORAS,PUESTO,RETENCIONES,VACACIONES,CONCEDIDAS,COMIENZO,FINAL) values ('2',null,'Miguel','Molina','Martín',null,'0',to_date('23/03/20','DD/MM/RR'),'1125','40',null,null,'2','1',to_date('29/03/20','DD/MM/RR'),to_date('31/03/20','DD/MM/RR'));
+Insert into AUTORACLE.V_EMPLEADOS_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,DESPEDIDO,CONTRATADO,"SUELDO BASE",HORAS,PUESTO,RETENCIONES,VACACIONES,CONCEDIDAS,COMIENZO,FINAL) values ('2',null,'Miguel','Molina','Martín',null,'0',to_date('23/03/20','DD/MM/RR'),'1125','40',null,null,'20','1',to_date('16/03/20','DD/MM/RR'),to_date('27/03/20','DD/MM/RR'));
+Insert into AUTORACLE.V_EMPLEADOS_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,DESPEDIDO,CONTRATADO,"SUELDO BASE",HORAS,PUESTO,RETENCIONES,VACACIONES,CONCEDIDAS,COMIENZO,FINAL) values ('5',null,'Rosa','Hidalgo','Bujalance',null,'0',to_date('02/03/20','DD/MM/RR'),'1095','40',null,null,'22','1',to_date('03/04/20','DD/MM/RR'),to_date('13/04/20','DD/MM/RR'));
+Insert into AUTORACLE.V_EMPLEADOS_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,DESPEDIDO,CONTRATADO,"SUELDO BASE",HORAS,PUESTO,RETENCIONES,VACACIONES,CONCEDIDAS,COMIENZO,FINAL) values ('7',null,'Lola','Sanchez','Pérez',null,'0',to_date('12/02/20','DD/MM/RR'),'1150','40','Mecanico',null,'18','1',to_date('15/08/20','DD/MM/RR'),to_date('30/08/20','DD/MM/RR'));
+Insert into AUTORACLE.V_EMPLEADOS_DATOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,DESPEDIDO,CONTRATADO,"SUELDO BASE",HORAS,PUESTO,RETENCIONES,VACACIONES,CONCEDIDAS,COMIENZO,FINAL) values ('8',null,'Augusto','Abascal','Aceituno',null,'0',to_date('05/07/19','DD/MM/RR'),'1125','40','Mecanico',null,'21','1',to_date('07/07/20','DD/MM/RR'),to_date('17/07/20','DD/MM/RR'));
+REM INSERTING into AUTORACLE.V_EMPLEADO_SERVICIOS
+SET DEFINE OFF;
+REM INSERTING into AUTORACLE.V_EMPLEADOS_SERVICIOS
+SET DEFINE OFF;
+Insert into AUTORACLE.V_EMPLEADOS_SERVICIOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,SERVICIO,"ESTADO DEL SERVICO","FECHA DE APERTURA","FECHA DE REALIZACION","FECHA DE RECEPCION",CHAPA,EFECTIVIDAD,VEHICULO,"MOTIVO DE REPARACION",HORAS,"PROXIMA REVISION","ESTADO DEL EXAMEN",CATEGORIA,FACTURA,"FECHA DE EMISION",DESCUENTO,IVA,"TOTAL (SIN IVA)","TOTAL (CON IVA)") values ('1',null,'Enrique','Soler','Castillo',null,'221','Reparar',to_date('10/02/20','DD/MM/RR'),to_date('16/02/20','DD/MM/RR'),to_date('10/02/20','DD/MM/RR'),'Correcta',null,'4658464','Muelle Rajado','4',to_date('17/02/21','DD/MM/RR'),'Averiada','Suspension','243',to_date('03/03/20','DD/MM/RR'),'10','21','0','0');
+Insert into AUTORACLE.V_EMPLEADOS_SERVICIOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,SERVICIO,"ESTADO DEL SERVICO","FECHA DE APERTURA","FECHA DE REALIZACION","FECHA DE RECEPCION",CHAPA,EFECTIVIDAD,VEHICULO,"MOTIVO DE REPARACION",HORAS,"PROXIMA REVISION","ESTADO DEL EXAMEN",CATEGORIA,FACTURA,"FECHA DE EMISION",DESCUENTO,IVA,"TOTAL (SIN IVA)","TOTAL (CON IVA)") values ('1',null,'Enrique','Soler','Castillo',null,'221','Reparar',to_date('10/02/20','DD/MM/RR'),to_date('16/02/20','DD/MM/RR'),to_date('10/02/20','DD/MM/RR'),'Correcta',null,'4658464','Muelle Rajado','4',to_date('17/02/21','DD/MM/RR'),'Averiada','Suspension','20',to_date('17/02/20','DD/MM/RR'),'0','21','0','0');
+Insert into AUTORACLE.V_EMPLEADOS_SERVICIOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,SERVICIO,"ESTADO DEL SERVICO","FECHA DE APERTURA","FECHA DE REALIZACION","FECHA DE RECEPCION",CHAPA,EFECTIVIDAD,VEHICULO,"MOTIVO DE REPARACION",HORAS,"PROXIMA REVISION","ESTADO DEL EXAMEN",CATEGORIA,FACTURA,"FECHA DE EMISION",DESCUENTO,IVA,"TOTAL (SIN IVA)","TOTAL (CON IVA)") values ('1',null,'Enrique','Soler','Castillo',null,'221','Reparar',to_date('10/02/20','DD/MM/RR'),to_date('16/02/20','DD/MM/RR'),to_date('10/02/20','DD/MM/RR'),'Correcta',null,'4658464','Muelle Rajado','4',to_date('17/02/21','DD/MM/RR'),'Rota','Luna','243',to_date('03/03/20','DD/MM/RR'),'10','21','0','0');
+Insert into AUTORACLE.V_EMPLEADOS_SERVICIOS (ID,USUARIO,NOMBRE,"PRIMER APELLIDO","SEGUNDO APELLIDO",EMAIL,SERVICIO,"ESTADO DEL SERVICO","FECHA DE APERTURA","FECHA DE REALIZACION","FECHA DE RECEPCION",CHAPA,EFECTIVIDAD,VEHICULO,"MOTIVO DE REPARACION",HORAS,"PROXIMA REVISION","ESTADO DEL EXAMEN",CATEGORIA,FACTURA,"FECHA DE EMISION",DESCUENTO,IVA,"TOTAL (SIN IVA)","TOTAL (CON IVA)") values ('1',null,'Enrique','Soler','Castillo',null,'221','Reparar',to_date('10/02/20','DD/MM/RR'),to_date('16/02/20','DD/MM/RR'),to_date('10/02/20','DD/MM/RR'),'Correcta',null,'4658464','Muelle Rajado','4',to_date('17/02/21','DD/MM/RR'),'Rota','Luna','20',to_date('17/02/20','DD/MM/RR'),'0','21','0','0');
+REM INSERTING into AUTORACLE.V_IVA_TRIMESTRE
+SET DEFINE OFF;
+Insert into AUTORACLE.V_IVA_TRIMESTRE (ANNO,TRIMESTRE,IVA_DEVANGADO) values ('2020','1','210');
+--------------------------------------------------------
+--  DDL for Index CATEGORIA_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."CATEGORIA_PK" ON "AUTORACLE"."CATEGORIA" ("IDCATEGORIA")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index CITA_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."CITA_PK" ON "AUTORACLE"."CITA" ("CLIENTE_IDCLIENTE", "IDCITA")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index CLIENTE_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."CLIENTE_PK" ON "AUTORACLE"."CLIENTE" ("IDCLIENTE")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index COMPATIBLE_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."COMPATIBLE_PK" ON "AUTORACLE"."COMPATIBLE" ("PIEZA_CODREF", "MODELO_IDMODELO", "MODELO_IDMARCA")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index COMPRA_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."COMPRA_PK" ON "AUTORACLE"."COMPRA" ("IDCOMPRA")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index CONTIENE_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."CONTIENE_PK" ON "AUTORACLE"."CONTIENE" ("FACTURA_IDFACTURA", "PIEZA_CODREF")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index EMPLEADO_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."EMPLEADO_PK" ON "AUTORACLE"."EMPLEADO" ("IDEMPLEADO")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index EXAMEN_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."EXAMEN_PK" ON "AUTORACLE"."EXAMEN" ("CATEGORIA_IDCATEGORIA")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index FACTURA_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."FACTURA_PK" ON "AUTORACLE"."FACTURA" ("IDFACTURA")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index LOTE_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."LOTE_PK" ON "AUTORACLE"."LOTE" ("PIEZA_CODREF", "COMPRA_IDCOMPRA")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index MANTENIMIENTO_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."MANTENIMIENTO_PK" ON "AUTORACLE"."MANTENIMIENTO" ("IDSERVICIO")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index MARCA_NOMBRE_UN
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."MARCA_NOMBRE_UN" ON "AUTORACLE"."MARCA" ("NOMBRE")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index MARCA_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."MARCA_PK" ON "AUTORACLE"."MARCA" ("IDMARCA")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index MODELO_NOMBRE_UN
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."MODELO_NOMBRE_UN" ON "AUTORACLE"."MODELO" ("NOMBRE")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index MODELO_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."MODELO_PK" ON "AUTORACLE"."MODELO" ("IDMODELO", "MARCA_IDMARCA")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index PIEZA_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."PIEZA_PK" ON "AUTORACLE"."PIEZA" ("CODREF")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index PROVEEDOR_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."PROVEEDOR_PK" ON "AUTORACLE"."PROVEEDOR" ("NIF")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index PROVEE_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."PROVEE_PK" ON "AUTORACLE"."PROVEE" ("PROVEEDOR_NIF", "PIEZA_CODREF")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index REPARACION_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."REPARACION_PK" ON "AUTORACLE"."REPARACION" ("IDSERVICIO")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index REQUIERE_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."REQUIERE_PK" ON "AUTORACLE"."REQUIERE" ("PIEZA_CODREF", "EXAMEN_CATEGORIA_IDCATEGORIA")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index SERVICIO_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."SERVICIO_PK" ON "AUTORACLE"."SERVICIO" ("IDSERVICIO")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index SYS_C0011430
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."SYS_C0011430" ON "AUTORACLE"."CLIENTE" ("EMAIL")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index SYS_C0011431
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."SYS_C0011431" ON "AUTORACLE"."CLIENTE" ("USUARIO")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index SYS_C0011432
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."SYS_C0011432" ON "AUTORACLE"."EMPLEADO" ("EMAIL")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index SYS_C0011433
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."SYS_C0011433" ON "AUTORACLE"."EMPLEADO" ("USUARIO")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index SYS_C0011434
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."SYS_C0011434" ON "AUTORACLE"."COMPRA_FUTURA" ("CODREF_PIEZA")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index TRABAJA_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."TRABAJA_PK" ON "AUTORACLE"."TRABAJA" ("EMPLEADO_IDEMPLEADO", "SERVICIO_IDSERVICIO")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index VACACIONES_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."VACACIONES_PK" ON "AUTORACLE"."VACACIONES" ("EMPLEADO_IDEMPLEADO", "IDENTIFICADOR")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index VEHICULO_MATRICULA_UN
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."VEHICULO_MATRICULA_UN" ON "AUTORACLE"."VEHICULO" ("MATRICULA")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Index VEHICULO_PK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "AUTORACLE"."VEHICULO_PK" ON "AUTORACLE"."VEHICULO" ("NUMBASTIDOR")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE" ;
+--------------------------------------------------------
+--  DDL for Trigger TR_ASEGURAR_FIDELIZACION
+--------------------------------------------------------
+
+  CREATE OR REPLACE EDITIONABLE TRIGGER "AUTORACLE"."TR_ASEGURAR_FIDELIZACION"
+    BEFORE INSERT OR UPDATE
+      ON AUTORACLE.FIDELIZACION FOR EACH ROW
+
+    DECLARE
+        descuento_ya_existe EXCEPTION;
+
+        CURSOR tabla IS
+            SELECT anno
+              FROM AUTORACLE.FIDELIZACION
+                WHERE cliente_idcliente = :new.CLIENTE_IDCLIENTE;
+
+    BEGIN
+        FOR fila IN tabla LOOP
+            IF fila.ANNO = :new.ANNO THEN -- si el cliente y el anno coinciden: ERROR
+                RAISE descuento_ya_existe;
+
+            END IF;
+
+        END LOOP;
+
+
+    EXCEPTION
+        WHEN descuento_ya_existe THEN
+            RAISE_APPLICATION_ERROR(-20015, 'Ya existe un descuento para el cliente '||:new.CLIENTE_IDCLIENTE||' en el año '||:new.ANNO);
+    END;
+
+/
+ALTER TRIGGER "AUTORACLE"."TR_ASEGURAR_FIDELIZACION" ENABLE;
+--------------------------------------------------------
+--  DDL for Trigger TR_ELIMINAR_CLIENTE_FIDELIZADO
+--------------------------------------------------------
+
+  CREATE OR REPLACE EDITIONABLE TRIGGER "AUTORACLE"."TR_ELIMINAR_CLIENTE_FIDELIZADO"
+        BEFORE DELETE
+            ON autoracle.CLIENTE
+                FOR EACH ROW
+
+    BEGIN
+        DELETE FROM autoracle.FIDELIZACION WHERE CLIENTE_IDCLIENTE = :old.IDCLIENTE;
+        DELETE FROM autoracle.VEHICULO WHERE CLIENTE_IDCLIENTE = :old.IDCLIENTE;
+    END;
+
+/
+ALTER TRIGGER "AUTORACLE"."TR_ELIMINAR_CLIENTE_FIDELIZADO" ENABLE;
+--------------------------------------------------------
+--  DDL for Procedure P_CALCULA_FACT
+--------------------------------------------------------
+set define off;
+
+  CREATE OR REPLACE EDITIONABLE PROCEDURE "AUTORACLE"."P_CALCULA_FACT" AS
+    iva_mult NUMBER;
+
+    CURSOR tabla IS
+        SELECT f.IDFACTURA, f.IVA, p.CODREF, p.PRECIOUNIDADVENTA, p.PRECIOUNIDADCOMPRA
+        FROM AUTORACLE.FACTURA f
+        JOIN AUTORACLE.CONTIENE c ON c.FACTURA_IDFACTURA = f.IDFACTURA
+        JOIN AUTORACLE.PIEZA p ON c.PIEZA_CODREF = p.CODREF;
+
+BEGIN
+    FOR fila IN tabla LOOP
+        iva_mult := 1 + (fila.IVA / 100); -- el IVA es un factor de crecimiento
+
+        UPDATE AUTORACLE.FACTURA
+            SET IVA_CALCULADO = IVA_CALCULADO + iva_mult * fila.PRECIOUNIDADVENTA,
+                TOTAL = TOTAL + fila.PRECIOUNIDADVENTA
+            WHERE IDFACTURA = fila.IDFACTURA;
+    END LOOP;
+END;
+
+/
+--------------------------------------------------------
+--  DDL for Procedure P_REVISA
+--------------------------------------------------------
+set define off;
+
+  CREATE OR REPLACE EDITIONABLE PROCEDURE "AUTORACLE"."P_REVISA" IS
+        CURSOR datos IS
+            SELECT  Pr.nif, Pr.telefono, Pr.nombre, Pr.email,
+                    Pi.cantidad, Pi.codref, Pi.feccaducidad
+                FROM autoracle.pieza Pi
+                    JOIN autoracle.proveedor Pr ON proveedor_nif = nif;
+
+        repetida NUMBER;
+
+    BEGIN
+        FOR fila IN datos LOOP
+
+            IF fila.feccaducidad < (sysdate-1) THEN
+                INSERT INTO autoracle.compra_futura
+                        VALUES (
+                        fila.nif,
+                        fila.telefono,
+                        fila.nombre,
+                        fila.email,
+                        fila.codref,
+                        fila.cantidad);
+
+                COMMIT;
+
+            END IF;
+
+        END LOOP;
+
+        EXCEPTION
+
+            WHEN DUP_VAL_ON_INDEX THEN
+                DBMS_OUTPUT.put_line('Se ignoraron algunas piezas ya incluidas.');
+
+    END p_revisa;
+
+/
+--------------------------------------------------------
+--  DDL for Package PKG_ANALISIS_DATOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE EDITIONABLE PACKAGE "AUTORACLE"."PKG_ANALISIS_DATOS" AS
+
+    TYPE MEDIA_MIN_MAX_UNITS IS
+        RECORD (media NUMBER, minimo NUMBER, maximo NUMBER);
+
+    TYPE TIEMPOS_SERVICIO IS
+        RECORD (dias NUMBER, horas NUMBER);
+
+    FUNCTION F_CALCULAR_PIEZAS(codref IN VARCHAR2, anno in VARCHAR2)
+        RETURN MEDIA_MIN_MAX_UNITS;
+
+    FUNCTION F_CALCULAR_TIEMPOS
+        RETURN tiempos_servicio;
+
+    PROCEDURE P_RECOMPENSA;
+
+END pkg_analisis_datos;
+
+/
+--------------------------------------------------------
+--  DDL for Package PKG_GESTION_DESCUENTOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE EDITIONABLE PACKAGE "AUTORACLE"."PKG_GESTION_DESCUENTOS" AS
+        PROCEDURE p_calcular_descuento(cliente VARCHAR2, anno NUMBER);
+        PROCEDURE p_aplicar_descuento(cliente VARCHAR2, anno NUMBER);
+
+END pkg_gestion_descuentos;
+
+/
+--------------------------------------------------------
+--  DDL for Package PKG_GESTION_EMPLEADOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE EDITIONABLE PACKAGE "AUTORACLE"."PKG_GESTION_EMPLEADOS" AS
+    PROCEDURE PR_CREAR_EMPLEADO(
+        nombre EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE );
+    PROCEDURE PR_BORRAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE );
+    PROCEDURE PR_MODIFICAR_EMPLEADO(
+        ide EMPLEADO.IDEMPLEADO%TYPE,
+        nom EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE,
+        fec EMPLEADO.FECENTRADA%TYPE,
+        des EMPLEADO.DESPEDIDO%TYPE,
+        sueldo EMPLEADO.SUELDOBASE%TYPE,
+        horas EMPLEADO.HORAS%TYPE,
+        pos EMPLEADO.PUESTO%TYPE,
+        ret EMPLEADO.RETENCIONES%TYPE );
+    PROCEDURE PR_BLOQUEAR_USUARIO(
+        nombre EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE );
+    PROCEDURE PR_DESBLOQUEAR_USUARIO(
+        nombre EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE );
+    PROCEDURE PR_BLOQUEAR_TODOS_EMPLEADOS;
+    PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS;
+END;
+
+/
+--------------------------------------------------------
+--  DDL for Package Body PKG_ANALISIS_DATOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE EDITIONABLE PACKAGE BODY "AUTORACLE"."PKG_ANALISIS_DATOS" AS
+
+    FUNCTION F_CALCULAR_PIEZAS(codref IN VARCHAR2, anno in VARCHAR2)
+        RETURN MEDIA_MIN_MAX_UNITS AS
+
+            resultado MEDIA_MIN_MAX_UNITS;
+
+            media NUMBER := 0;
+            minimo NUMBER := 1000;
+            maximo NUMBER := 0;
+            contador NUMBER := 0;
+
+            CURSOR tabla IS
+                SELECT  TO_CHAR(c.FECEMISION, 'YYYY') AS ANNO,
+                        L.PIEZA_CODREF AS PIEZA_CODREF,
+                        L.NUMERO_DE_PIEZAS AS NUMERO_DE_PIEZAS
+                    FROM autoracle.COMPRA c
+                        JOIN AUTORACLE.LOTE L ON c.IDCOMPRA = L.COMPRA_IDCOMPRA;
+
+        BEGIN
+            FOR fila IN tabla LOOP
+                -- Este IF puede ir en el cursor en el WHERE
+                IF fila.ANNO = anno AND fila.PIEZA_CODREF = codref THEN
+                    contador := contador + 1;
+                    media := media + fila.NUMERO_DE_PIEZAS;
+
+                    IF fila.NUMERO_DE_PIEZAS > maximo THEN
+                        maximo := fila.NUMERO_DE_PIEZAS;
+
+                    ELSIF fila.NUMERO_DE_PIEZAS < minimo THEN
+                        minimo := fila.NUMERO_DE_PIEZAS;
+
+                    END IF;
+
+                END IF;
+
+            END LOOP;
+
+            resultado.media :=  media / contador;
+            resultado.minimo := minimo;
+            resultado.maximo := maximo;
+
+            RETURN resultado;
+        END;
+
+    -- Es una funcion, pero entiendo que si se usa para TODOS los servicios,
+    -- entonces es mejor un Procedimiento.
+    FUNCTION F_CALCULAR_TIEMPOS
+        RETURN TIEMPOS_SERVICIO AS
+
+            dias_totales NUMBER := 0;
+            horas_totales NUMBER := 0;
+            servicios_totales NUMBER := 0;
+
+            resultado TIEMPOS_SERVICIO;
+
+            CURSOR datos IS
+                SELECT  S.idservicio AS id_servicio,
+                        SUM(S.fecrealizacion - S.fecrecepcion) AS num_dias,
+                        SUM(R.horas) AS num_horas
+                    FROM servicio S
+                        JOIN reparacion R ON S.idservicio = R.idservicio
+                        GROUP BY S.idservicio;
+
+        BEGIN
+            FOR fila IN DATOS LOOP
+                IF fila.num_dias IS NOT NULL AND fila.num_horas IS NOT NULL THEN
+                    dias_totales := dias_totales + fila.num_dias;
+                    horas_totales := horas_totales + fila.num_horas;
+                    servicios_totales := servicios_totales + 1;
+
+                END IF;
+
+            END LOOP;
+
+            resultado.dias := dias_totales / servicios_totales;
+            resultado.horas := horas_totales / servicios_totales;
+
+            RETURN resultado;
+        END;
+
+    -- Creo que este procedimiento usa las funcion del (2) para cada servicio
+    PROCEDURE P_RECOMPENSA AS
+        servicio_mas_lento NUMBER;
+        servicio_mas_lento_dias NUMBER := 0;       -- Se esperan valores '>0'
+        servicio_mas_lento_idempleado NUMBER;
+
+        servicio_mas_rapido NUMBER;
+        servicio_mas_rapido_dias NUMBER := 1000;   -- Se esperan valores '<1000'
+        servicio_mas_rapido_idempleado NUMBER;
+
+        tiempo_medio TIEMPOS_SERVICIO := F_CALCULAR_TIEMPOS;
+
+        CURSOR servicios IS
+            SELECT s.IDSERVICIO as id_servicio,
+                   t.EMPLEADO_IDEMPLEADO as id_empleado
+                FROM AUTORACLE.SERVICIO s
+                    JOIN AUTORACLE.TRABAJA t ON s.IDSERVICIO = t.SERVICIO_IDSERVICIO;
+
+        BEGIN
+            -- Encontrar los servicios mas rapido y mas lento
+            FOR servicio IN servicios LOOP
+                IF tiempo_medio.dias < servicio_mas_rapido_dias THEN
+                    servicio_mas_rapido := servicio.id_servicio;
+                    servicio_mas_rapido_dias := tiempo_medio.dias;
+                    servicio_mas_rapido_idempleado := servicio.id_empleado;
+
+                ELSIF tiempo_medio.dias > servicio_mas_lento_dias THEN
+                    servicio_mas_lento := servicio.id_servicio;
+                    servicio_mas_lento_dias := tiempo_medio.dias;
+                    servicio_mas_lento_idempleado := servicio.id_empleado;
+
+                END IF;
+
+            END LOOP;
+
+            -- Obtenidos los servicios, se actualizan los sueldos
+            UPDATE AUTORACLE.EMPLEADO
+                SET SUELDOBASE = SUELDOBASE - (0.05 * SUELDOBASE)
+                    WHERE IDEMPLEADO = servicio_mas_lento_idempleado;
+
+            UPDATE AUTORACLE.EMPLEADO
+                SET SUELDOBASE = SUELDOBASE + (0.05 * SUELDOBASE)
+                    WHERE IDEMPLEADO = servicio_mas_rapido_idempleado;
+
+            COMMIT;
+        END;
+
+END pkg_analisis_datos;
+
+/
+--------------------------------------------------------
+--  DDL for Package Body PKG_GESTION_DESCUENTOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE EDITIONABLE PACKAGE BODY "AUTORACLE"."PKG_GESTION_DESCUENTOS" AS
+
+        PROCEDURE P_CALCULAR_DESCUENTO(cliente VARCHAR2, anno NUMBER) AS
+            v_descuento NUMBER := 0;    -- Comenzamos con descuento 0
+            facturas NUMBER;            -- Contador para facturas pagadas
+            citas5dias NUMBER;          -- Contador para citas esperadas
+            servicios_largos NUMBER;    -- Contador para servicios esperados
+            media_horas NUMBER;         -- Horas de espera media de los servicios
+
+            BEGIN
+                -- Todas las facturas del cliente (en ese año)
+
+                SELECT COUNT(*) INTO facturas
+                    FROM AUTORACLE.FACTURA
+                        WHERE CLIENTE_IDCLIENTE = cliente
+                            AND TO_CHAR(FECEMISION, 'YYYY') = TO_CHAR(anno);
+
+
+                -- Todas las citas con mas de 5 dias de espera (en ese año)
+
+                SELECT COUNT(*) INTO citas5dias
+                    FROM AUTORACLE.CITA
+                        WHERE CLIENTE_IDCLIENTE = cliente
+                            AND ABS(FECHA_CONCERTADA - FECHA_SOLICITUD) > 5
+                            AND TO_CHAR(FECHA_SOLICITUD, 'YYYY') = TO_CHAR(anno);
+
+
+                SELECT AVG(FECREALIZACION - FECAPERTURA) INTO media_horas
+                    FROM SERVICIO;
+
+
+                -- Todos los servicios con mas de la media de dias de espera (en ese año)
+
+                SELECT COUNT(*) INTO servicios_largos
+                    FROM AUTORACLE.SERVICIO s
+                        JOIN AUTORACLE.VEHICULO v ON s.VEHICULO_NUMBASTIDOR = v.NUMBASTIDOR
+                        WHERE v.CLIENTE_IDCLIENTE = cliente
+                            AND TO_CHAR(s.FECAPERTURA, 'YYYY') = TO_CHAR(anno)
+                            AND (FECREALIZACION - FECAPERTURA) > media_horas;
+
+
+                -- Guardamos el descuento para el año siguiente (maximo 10%)
+
+                v_descuento := LEAST(facturas + citas5dias + servicios_largos, 10);
+
+                INSERT INTO AUTORACLE.FIDELIZACION
+                    VALUES (cliente, v_descuento, anno + 1);
+
+            END;
+
+        PROCEDURE P_APLICAR_DESCUENTO(cliente VARCHAR2, anno NUMBER) AS
+            v_descuento NUMBER := 0;    -- Por defecto el descuento es 0
+
+            BEGIN
+                SELECT descuento INTO v_descuento   -- Descuento (si existe)
+                    FROM AUTORACLE.FIDELIZACION F
+                        WHERE CLIENTE_IDCLIENTE = cliente
+                            AND TO_NUMBER(F.anno) = anno;
+
+                UPDATE AUTORACLE.FACTURA
+                    SET DESCUENTO = v_descuento, TOTAL = TOTAL - (TOTAL * v_descuento/100)
+                        WHERE CLIENTE_IDCLIENTE = cliente
+                            AND TO_CHAR(FECEMISION, 'YYYY') = TO_CHAR(anno);
+
+            EXCEPTION
+                WHEN no_data_found THEN     -- Si no existe el descuento...
+                    RAISE_APPLICATION_ERROR(-20016, 'P_APLICAR_DESCUENTO Error: No hay descuento para el cliente '||cliente||' para el año '||anno);
+
+            END;
+
+END pkg_gestion_descuentos;
+
+/
+--------------------------------------------------------
+--  DDL for Package Body PKG_GESTION_EMPLEADOS
+--------------------------------------------------------
+
+  CREATE OR REPLACE EDITIONABLE PACKAGE BODY "AUTORACLE"."PKG_GESTION_EMPLEADOS" AS
+
+    PROCEDURE PR_CREAR_EMPLEADO(
+        nombre EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE )
+    AS
+        identificacion NUMBER := sec_idempleado.NEXTVAL;
+        username ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
+        sentencia VARCHAR2(500) := 'CREATE USER ' ||
+                                    username ||
+                                    ' IDENTIFIED BY ' ||
+                                    username ||
+                                    ' DEFAULT TABLESPACE TS_AUTORACLE';
+    BEGIN
+        INSERT INTO EMPLEADO(IDEMPLEADO, NOMBRE, APELLIDO1, APELLIDO2, FECENTRADA, DESPEDIDO, SUELDOBASE)
+            VALUES(identificacion, nombre, ap1, ap2, sysdate, 0, 1500);
+
+        DBMS_OUTPUT.PUT_LINE(sentencia);
+        DBMS_OUTPUT.PUT_LINE('ID: ' || identificacion);
+
+        EXECUTE IMMEDIATE sentencia;
+    END;
+
+
+    PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE) IS
+        usuario EMPLEADO.NOMBRE%TYPE;
+        sentencia VARCHAR2(500);
+    BEGIN
+        SELECT UPPER(NOMBRE) || '_' || UPPER(APELLIDO1) || '_' || UPPER(APELLIDO2)
+            INTO usuario
+            FROM autoracle.EMPLEADO
+            WHERE IDEMPLEADO = ide;
+
+        sentencia := 'DROP USER ' || usuario || ' CASCADE';
+
+        -- DBMS_OUTPUT.PUT_LINE(sentencia);
+        EXECUTE IMMEDIATE sentencia;
+
+        DELETE FROM autoracle.EMPLEADO
+            WHERE IDEMPLEADO = ide;
+    END;
+
+
+    PROCEDURE PR_MODIFICAR_EMPLEADO(
+        ide EMPLEADO.IDEMPLEADO%TYPE,
+        nom EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE,
+        fec EMPLEADO.FECENTRADA%TYPE,
+        des EMPLEADO.DESPEDIDO%TYPE,
+        sueldo EMPLEADO.SUELDOBASE%TYPE,
+        horas EMPLEADO.HORAS%TYPE,
+        pos EMPLEADO.PUESTO%TYPE,
+        ret EMPLEADO.RETENCIONES%TYPE )
+    AS
+        des_mal EXCEPTION;
+    BEGIN
+        IF ( (des > 1) OR (des < 0) ) then
+            RAISE des_mal;
+        END IF;
+
+        UPDATE autoracle.EMPLEADO SET
+            NOMBRE = nom,
+            APELLIDO1 = ap1,
+            APELLIDO2 = ap2,
+            FECENTRADA = fec,
+            DESPEDIDO = des,
+            SUELDOBASE = sueldo,
+            HORAS = horas,
+            PUESTO = pos,
+            RETENCIONES = ret
+        WHERE
+            IDEMPLEADO = ide;
+
+    EXCEPTION
+        WHEN des_mal THEN
+            DBMS_OUTPUT.PUT_LINE('Valor de "Despido" incorrecto (ingrese 0 o 1)');
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Parametros incorrectos.
+            Introduce (IDEmpleado, Despido, Sueldo Base, Puesto, Horas, Retenciones)');
+    END;
+
+    -- Deberia de ser con (Nombre, Ap1, Ap2) o con (Ide) ????
+    PROCEDURE PR_BLOQUEAR_USUARIO(
+        nombre EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE )
+    AS
+        usuario ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
+        sentencia VARCHAR2(500) := 'ALTER USER ' || usuario || ' ACCOUNT LOCK';
+    BEGIN
+        -- DBMS_OUTPUT.PUT_LINE(sentencia);
+        EXECUTE IMMEDIATE sentencia;
+    END;
+
+    -- Deberia de ser con (Nombre, Ap1, Ap2) o con (Ide) ????
+    PROCEDURE PR_DESBLOQUEAR_USUARIO(
+        nombre EMPLEADO.NOMBRE%TYPE,
+        ap1 EMPLEADO.APELLIDO1%TYPE,
+        ap2 EMPLEADO.APELLIDO2%TYPE )
+    AS
+        usuario ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
+        sentencia VARCHAR2(500) := 'ALTER USER ' || usuario || ' ACCOUNT UNLOCK';
+
+    BEGIN
+        -- DBMS_OUTPUT.PUT_LINE(sentencia);
+        EXECUTE IMMEDIATE sentencia;
+    END;
+
+
+    PROCEDURE PR_BLOQUEAR_TODOS_EMPLEADOS AS
+        sentencia VARCHAR(500);
+        CURSOR empleados IS
+            SELECT UPPER(NOMBRE) || '_' || UPPER(APELLIDO1) || '_' || UPPER(APELLIDO2) AS USUARIO
+            FROM autoracle.EMPLEADO
+                WHERE usuario IS NOT NULL;
+
+    BEGIN
+        FOR emp IN empleados LOOP
+            sentencia := 'ALTER USER ' || emp.USUARIO || ' ACCOUNT LOCK';
+            EXECUTE IMMEDIATE sentencia;
+        END LOOP;
+    END;
+
+
+    PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS AS
+        sentencia VARCHAR(500);
+        CURSOR empleados IS
+            SELECT UPPER(NOMBRE) || '_' || UPPER(APELLIDO1) || '_' || UPPER(APELLIDO2) AS USUARIO
+                FROM autoracle.EMPLEADO
+                    WHERE usuario IS NOT NULL;
+
+    BEGIN
+        FOR emp IN empleados LOOP
+            sentencia := 'ALTER USER ' || emp.USUARIO || ' ACCOUNT UNLOCK';
+            EXECUTE IMMEDIATE sentencia;
+        END LOOP;
+    END;
+END;
+
+/
+--------------------------------------------------------
+--  DDL for Function LOGMNR$COL_GG_TABF_PUBLIC
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE FUNCTION "SYSTEM"."LOGMNR$COL_GG_TABF_PUBLIC" wrapped
+a000000
+1
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+8
+237 185
+nkvJV1w6wH1y7mRApzf9mGuebNUwgxDILkhGfHQCmP8+Vi4fyqh3SG1Fyq+pCts1OlgnK761
+YuzKBA4JE5DNwZzBIF/Y4ZM5eUlquVyTkOg+AodK3vQJt9NLvPITXbP42O37gO+zKr4BQEJk
+ypwrP1U/Pf6MLZONN8LUaVqHCN87T14HqHs5taX7LhLXQ2lCVBE1Ll8dyB9CDOlbyvQS/lrb
++0n1pQi9IJAWySL85ChAqnTaqFJm0YeToD4lZ8UUPQqIZNoX0x73WK9OzsmdBrvEC97iduxe
+PEXVkxF6xklPod6yOGBvW7DAFMBgf+LajDLVKOAwB2EAiKCXYMuTUTtMYYkCFFf4sj1rCpsj
+TLth6TSru530aM2HP6bEbm3m
+
+/
+--------------------------------------------------------
+--  DDL for Function LOGMNR$GSBA_GG_TABF_PUBLIC
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE FUNCTION "SYSTEM"."LOGMNR$GSBA_GG_TABF_PUBLIC" wrapped
+a000000
+1
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+8
+206 171
+6gxi/CQwK1I5Rfwuw/SXrOGpVRYwgwLI1yfbfHRGEjNe54OE4QwRZCoA20oG536tzgcBrj+1
+xE3tE8jIhAoTlUdUmkdYMmZycO1SdiJZwwt/6BrM1wHXl/E5+3Ip2NXzC9j8v4+KjkD9d5AT
+p05eEsEWjU1CBTMSpjZZrXzbgFl9QNnQ+zJGjSug21f76ajs78m6anxz7vFcTcem6XpAgKjc
+EXzd/ijP8qiOqwblTfnXcRslJn3MljD02u+5fh9NBctOmnaw/tOjRCFPUhY8I9gCoMptjG7U
+rHEIFzHOFyxBEdulRGq4ngSgcm7l2yOdSHgNM8rO2vUH4gozvJoLE1S8GBBzG/wrvHPhACQ/
+2w==
+
+/
+--------------------------------------------------------
+--  DDL for Function LOGMNR$KEY_GG_TABF_PUBLIC
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE FUNCTION "SYSTEM"."LOGMNR$KEY_GG_TABF_PUBLIC" wrapped
+a000000
+1
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+8
+2a0 1a1
+3O4I5hDO715d8A2tqbxMCflFW0owg/D319xqfC9Grfg+K6yE71zMvtNS45AyRXBk77WpI5v4
+nUSfE2lbvUYgk3JHySIe28XxC3xIYYpPGQjxwa3GzPw0FN5aN6kerQQTHUBp29Dd+vLSgBaC
+2pAFrq059ZvN0ZPN11XG/2RuDY7HaTQu/QffhnY8rVlNxpFmbkVidwtZQahx5qIFu9Uww/tv
+o1AvhjaORi898/KiPtOqv7LpsPFbyNuMnZEG48cxtZuesMBJFP/bKtgU2DN69xiT8Pxf+N2n
+g0D2ximYzZqwY/4dBQj9dyQDuXRFo40hdqtWw0L96zV6723aQ8Xp0cqBaZj2wWTI4+6Ikry9
+zY0Mdm3bV8TYqsOa+zT4fnikGO0eYbTFHEiW9QUbl/UwzuERwk8p
+
+/
+--------------------------------------------------------
+--  DDL for Function LOGMNR$SEQ_GG_TABF_PUBLIC
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE FUNCTION "SYSTEM"."LOGMNR$SEQ_GG_TABF_PUBLIC" wrapped
+a000000
+1
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+8
+249 181
+++dDv/cHZatK7/vHG9lvR8DQCpYwg/D3AEhqfHQC2h6ONoOvOeHvTNX1S5GDyajM4j8vkSVz
+IMw+LbYS3goujprvmrB/LUpdBF8TVvjEqZpC7MCKPXWcGnTeL7ja8C2tcOdjOpRXkwL5NmPJ
+B0KqMvwepdiQDY7HUDQrBddQC1lBqHGEogWkwRJ3+2+jUC+Gpo5GTazIWS0V551NkSl3+h0W
+BhkPglLbvQDPzxWTnmu4ZuJIlTiNwTf1R0WxghyyKFjES9CJsCrGT8Fn7prlF4Mr5kx1YBGf
+5xaODtRnmVJgb65RlKbAN9+Xxf2QnQjKQL99RZAgsEwGVKNfx9lFKwHLGUwzjOxmIAXXYd/Z
++L9osPQJjZYkNrD0pQ==
+
+/
+--------------------------------------------------------
+--  DDL for Function LOGMNR$TAB_GG_TABF_PUBLIC
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE FUNCTION "SYSTEM"."LOGMNR$TAB_GG_TABF_PUBLIC" wrapped
+a000000
+1
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+8
+22e 181
+PRVt0FiLRPgjIhZlCZcQhnOHXQ4wgzJp2UhGfHSKrQ843hKm3gKD9swoFAS4jVcW0CsSl7W1
+6banVWdjktOVM18XyRjY4ZM5eRdquSp0ZdfHl3KJPBYqPi9LXIwum30Qh7ymgO+zTKj+R1N2
+nSs/TPnknfYLwcUdAfBryDQGEIMisMuE9XT5ix3sudhHa5tLJRjsBIDKlqL7zk2CH0C1NRAZ
+XrP7WgavVdNS3Yikz88VupZG21hTuAGspJBgCagmNWIwi9pgCIWP3rxF4p+uMps/ABEg+MBP
+6Iykm62kO6hWhVHJXkfKF/jrQFjYBTTzatr1VTcOXt/AFuagDR7isNtb//lnXh8TXyAFWyCT
+ubv6GXL0aM0PP/t+DfSl
+
+/
+--------------------------------------------------------
+--  DDL for Function LOGMNR$USER_GG_TABF_PUBLIC
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE FUNCTION "SYSTEM"."LOGMNR$USER_GG_TABF_PUBLIC" wrapped
+a000000
+1
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+8
+272 191
+Vc+i+Mga8m7/BSlvXl0J+GmParYwg/D319wCfC8CTE6Ot30G8QRR0WzR8ohw8Z/y6DuL4pL5
+IDjZApnCaZgeKa1OTjLj2B2tOYZg2ZuOAPKrxo7DeBqtn0Ahw0tubS36jP4xc+d2eQebdJMD
+c/U0JxdiAl0qIPzsltBjeoGAEsxUk0aubCMJmysgc2d8ojil6ixQ37D7RA0HWMkh27QdOuXF
+vSwuufDunMMT8Hue9dvy4vRXj+PhuyylJSukStsxyIb234EahCXyrjDlnzbC91eoU7v5sb4D
+OvtDmggQCEViyhFXwspP9P0dOObin8JENsDJeFZYr/oVAgSHa97LRKvNZgd+f//XHlpEAOP4
+rNm5mF0wTCABbb7tc5c7uo09M+79i7en8g==
+
+/
+--------------------------------------------------------
+--  DDL for Function SEC_FUNCTION
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE FUNCTION "SYSTEM"."SEC_FUNCTION" (p_schema VARCHAR2, p_obj VARCHAR2)
+        RETURN VARCHAR2
+        IS
+        usu VARCHAR2(100);
+
+        BEGIN
+            IF (SYS_CONTEXT('USERENV', 'ISDBA')='TRUE')
+                THEN RETURN '';
+                -- Si el usuario se conecta como sysdba, podrá ver toda la tabla.
+
+            ELSE
+                usu := SYS_CONTEXT('userenv', 'SESSION_USER');
+                RETURN 'UPPER(USER_NAME) = ''' || usu || '''';
+
+            END IF;
+        END;
+
+/
+--------------------------------------------------------
+--  DDL for Synonymn CATALOG
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE SYNONYM "SYSTEM"."CATALOG" FOR "SYS"."CATALOG";
+--------------------------------------------------------
+--  DDL for Synonymn COL
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE SYNONYM "SYSTEM"."COL" FOR "SYS"."COL";
+--------------------------------------------------------
+--  DDL for Synonymn PRODUCT_USER_PROFILE
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE SYNONYM "SYSTEM"."PRODUCT_USER_PROFILE" FOR "SYSTEM"."SQLPLUS_PRODUCT_PROFILE";
+--------------------------------------------------------
+--  DDL for Synonymn PUBLICSYN
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE SYNONYM "SYSTEM"."PUBLICSYN" FOR "SYS"."PUBLICSYN";
+--------------------------------------------------------
+--  DDL for Synonymn SYSCATALOG
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE SYNONYM "SYSTEM"."SYSCATALOG" FOR "SYS"."SYSCATALOG";
+--------------------------------------------------------
+--  DDL for Synonymn SYSFILES
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE SYNONYM "SYSTEM"."SYSFILES" FOR "SYS"."SYSFILES";
+--------------------------------------------------------
+--  DDL for Synonymn TAB
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE SYNONYM "SYSTEM"."TAB" FOR "SYS"."TAB";
+--------------------------------------------------------
+--  DDL for Synonymn TABQUOTAS
+--------------------------------------------------------
+
+  CREATE OR REPLACE NONEDITIONABLE SYNONYM "SYSTEM"."TABQUOTAS" FOR "SYS"."TABQUOTAS";
+--------------------------------------------------------
+--  Constraints for Table CATEGORIA
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."CATEGORIA" ADD CONSTRAINT "CATEGORIA_PK" PRIMARY KEY ("IDCATEGORIA")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."CATEGORIA" MODIFY ("IDCATEGORIA" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table CITA
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."CITA" ADD CONSTRAINT "CITA_PK" PRIMARY KEY ("CLIENTE_IDCLIENTE", "IDCITA")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."CITA" MODIFY ("IDCITA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."CITA" MODIFY ("FECHA_SOLICITUD" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."CITA" MODIFY ("FECHA_CONCERTADA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."CITA" MODIFY ("CLIENTE_IDCLIENTE" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table CLIENTE
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."CLIENTE" ADD UNIQUE ("EMAIL")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."CLIENTE" ADD UNIQUE ("USUARIO")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."CLIENTE" ADD CONSTRAINT "CLIENTE_PK" PRIMARY KEY ("IDCLIENTE")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."CLIENTE" MODIFY ("IDCLIENTE" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."CLIENTE" MODIFY ("TELEFONO" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table COMPATIBLE
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."COMPATIBLE" ADD CONSTRAINT "COMPATIBLE_PK" PRIMARY KEY ("PIEZA_CODREF", "MODELO_IDMODELO", "MODELO_IDMARCA")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."COMPATIBLE" MODIFY ("PIEZA_CODREF" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."COMPATIBLE" MODIFY ("MODELO_IDMODELO" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."COMPATIBLE" MODIFY ("MODELO_IDMARCA" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table COMPRA
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."COMPRA" ADD CONSTRAINT "COMPRA_PK" PRIMARY KEY ("IDCOMPRA")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."COMPRA" MODIFY ("IDCOMPRA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."COMPRA" MODIFY ("FECEMISION" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."COMPRA" MODIFY ("PROVEEDOR_NIF" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table COMPRA_FUTURA
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."COMPRA_FUTURA" ADD UNIQUE ("CODREF_PIEZA")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+--------------------------------------------------------
+--  Constraints for Table CONTIENE
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."CONTIENE" ADD CONSTRAINT "CONTIENE_PK" PRIMARY KEY ("FACTURA_IDFACTURA", "PIEZA_CODREF")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."CONTIENE" MODIFY ("FACTURA_IDFACTURA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."CONTIENE" MODIFY ("PIEZA_CODREF" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table EMPLEADO
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."EMPLEADO" ADD UNIQUE ("EMAIL")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."EMPLEADO" ADD UNIQUE ("USUARIO")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."EMPLEADO" ADD CONSTRAINT "EMPLEADO_PK" PRIMARY KEY ("IDEMPLEADO")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."EMPLEADO" MODIFY ("IDEMPLEADO" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."EMPLEADO" MODIFY ("NOMBRE" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."EMPLEADO" MODIFY ("FECENTRADA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."EMPLEADO" MODIFY ("DESPEDIDO" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."EMPLEADO" MODIFY ("SUELDOBASE" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table EXAMEN
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."EXAMEN" ADD CONSTRAINT "EXAMEN_PK" PRIMARY KEY ("CATEGORIA_IDCATEGORIA")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."EXAMEN" MODIFY ("CATEGORIA_IDCATEGORIA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."EXAMEN" MODIFY ("MANTENIMIENTO_IDSERVICIO" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table FACTURA
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."FACTURA" ADD CONSTRAINT "FACTURA_PK" PRIMARY KEY ("IDFACTURA")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."FACTURA" MODIFY ("IDFACTURA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."FACTURA" MODIFY ("CLIENTE_IDCLIENTE" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."FACTURA" MODIFY ("IVA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."FACTURA" MODIFY ("FECEMISION" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."FACTURA" MODIFY ("EMPLEADO_IDEMPLEADO" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."FACTURA" ADD CHECK ( iva BETWEEN 0 AND 100 ) ENABLE;
+  ALTER TABLE "AUTORACLE"."FACTURA" ADD CHECK ( descuento BETWEEN 0 AND 100 ) ENABLE;
+--------------------------------------------------------
+--  Constraints for Table LOTE
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."LOTE" ADD CONSTRAINT "LOTE_PK" PRIMARY KEY ("PIEZA_CODREF", "COMPRA_IDCOMPRA")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."LOTE" MODIFY ("PIEZA_CODREF" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."LOTE" MODIFY ("COMPRA_IDCOMPRA" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table MANTENIMIENTO
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."MANTENIMIENTO" ADD CONSTRAINT "MANTENIMIENTO_PK" PRIMARY KEY ("IDSERVICIO")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."MANTENIMIENTO" MODIFY ("IDSERVICIO" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table MARCA
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."MARCA" ADD CONSTRAINT "MARCA_NOMBRE_UN" UNIQUE ("NOMBRE")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."MARCA" ADD CONSTRAINT "MARCA_PK" PRIMARY KEY ("IDMARCA")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."MARCA" MODIFY ("IDMARCA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."MARCA" MODIFY ("NOMBRE" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table MODELO
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."MODELO" ADD CONSTRAINT "MODELO_NOMBRE_UN" UNIQUE ("NOMBRE")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."MODELO" ADD CONSTRAINT "MODELO_PK" PRIMARY KEY ("IDMODELO", "MARCA_IDMARCA")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."MODELO" MODIFY ("IDMODELO" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."MODELO" MODIFY ("MARCA_IDMARCA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."MODELO" MODIFY ("NOMBRE" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table PIEZA
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."PIEZA" ADD CONSTRAINT "PIEZA_PK" PRIMARY KEY ("CODREF")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."PIEZA" MODIFY ("CODREF" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."PIEZA" MODIFY ("NOMBRE" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."PIEZA" MODIFY ("PRECIOUNIDADVENTA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."PIEZA" MODIFY ("CANTIDAD" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."PIEZA" MODIFY ("PROVEEDOR_NIF" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table PROVEE
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."PROVEE" ADD CONSTRAINT "PROVEE_PK" PRIMARY KEY ("PROVEEDOR_NIF", "PIEZA_CODREF")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."PROVEE" MODIFY ("PROVEEDOR_NIF" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."PROVEE" MODIFY ("PIEZA_CODREF" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table PROVEEDOR
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."PROVEEDOR" ADD CONSTRAINT "PROVEEDOR_PK" PRIMARY KEY ("NIF")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."PROVEEDOR" MODIFY ("NIF" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."PROVEEDOR" MODIFY ("TELEFONO" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table REPARACION
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."REPARACION" ADD CONSTRAINT "REPARACION_PK" PRIMARY KEY ("IDSERVICIO")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."REPARACION" MODIFY ("IDSERVICIO" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."REPARACION" MODIFY ("MOTIVO" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."REPARACION" MODIFY ("HORAS" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table REQUIERE
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."REQUIERE" ADD CONSTRAINT "REQUIERE_PK" PRIMARY KEY ("PIEZA_CODREF", "EXAMEN_CATEGORIA_IDCATEGORIA")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."REQUIERE" MODIFY ("PIEZA_CODREF" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."REQUIERE" MODIFY ("EXAMEN_CATEGORIA_IDCATEGORIA" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table SERVICIO
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."SERVICIO" ADD CONSTRAINT "SERVICIO_PK" PRIMARY KEY ("IDSERVICIO")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."SERVICIO" MODIFY ("IDSERVICIO" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."SERVICIO" MODIFY ("ESTADO" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."SERVICIO" MODIFY ("FECAPERTURA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."SERVICIO" MODIFY ("VEHICULO_NUMBASTIDOR" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table TRABAJA
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."TRABAJA" MODIFY ("EMPLEADO_IDEMPLEADO" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."TRABAJA" MODIFY ("SERVICIO_IDSERVICIO" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."TRABAJA" ADD CONSTRAINT "TRABAJA_PK" PRIMARY KEY ("EMPLEADO_IDEMPLEADO", "SERVICIO_IDSERVICIO")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+--------------------------------------------------------
+--  Constraints for Table VACACIONES
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."VACACIONES" MODIFY ("IDENTIFICADOR" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."VACACIONES" MODIFY ("FECENTRADA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."VACACIONES" MODIFY ("FECSALIDA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."VACACIONES" MODIFY ("EMPLEADO_IDEMPLEADO" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."VACACIONES" ADD CONSTRAINT "VACACIONES_PK" PRIMARY KEY ("EMPLEADO_IDEMPLEADO", "IDENTIFICADOR")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+--------------------------------------------------------
+--  Constraints for Table VEHICULO
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."VEHICULO" MODIFY ("NUMBASTIDOR" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."VEHICULO" MODIFY ("MODELO_IDMODELO" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."VEHICULO" MODIFY ("MODELO_MARCA_IDMARCA" NOT NULL ENABLE);
+  ALTER TABLE "AUTORACLE"."VEHICULO" ADD CONSTRAINT "VEHICULO_MATRICULA_UN" UNIQUE ("MATRICULA")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+  ALTER TABLE "AUTORACLE"."VEHICULO" ADD CONSTRAINT "VEHICULO_PK" PRIMARY KEY ("NUMBASTIDOR")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "TS_AUTORACLE"  ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table CITA
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."CITA" ADD CONSTRAINT "CITA_CLIENTE_FK" FOREIGN KEY ("CLIENTE_IDCLIENTE")
+	  REFERENCES "AUTORACLE"."CLIENTE" ("IDCLIENTE") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table COMPATIBLE
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."COMPATIBLE" ADD CONSTRAINT "COMPATIBLE_MODELO_FK" FOREIGN KEY ("MODELO_IDMODELO", "MODELO_IDMARCA")
+	  REFERENCES "AUTORACLE"."MODELO" ("IDMODELO", "MARCA_IDMARCA") ENABLE;
+  ALTER TABLE "AUTORACLE"."COMPATIBLE" ADD CONSTRAINT "COMPATIBLE_PIEZA_FK" FOREIGN KEY ("PIEZA_CODREF")
+	  REFERENCES "AUTORACLE"."PIEZA" ("CODREF") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table COMPRA
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."COMPRA" ADD CONSTRAINT "COMPRA_PROVEEDOR_FK" FOREIGN KEY ("PROVEEDOR_NIF")
+	  REFERENCES "AUTORACLE"."PROVEEDOR" ("NIF") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table CONTIENE
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."CONTIENE" ADD CONSTRAINT "CONTIENE_FACTURA_FK" FOREIGN KEY ("FACTURA_IDFACTURA")
+	  REFERENCES "AUTORACLE"."FACTURA" ("IDFACTURA") ENABLE;
+  ALTER TABLE "AUTORACLE"."CONTIENE" ADD CONSTRAINT "CONTIENE_PIEZA_FK" FOREIGN KEY ("PIEZA_CODREF")
+	  REFERENCES "AUTORACLE"."PIEZA" ("CODREF") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table EXAMEN
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."EXAMEN" ADD CONSTRAINT "EXAMEN_CATEGORIA_FK" FOREIGN KEY ("CATEGORIA_IDCATEGORIA")
+	  REFERENCES "AUTORACLE"."CATEGORIA" ("IDCATEGORIA") ENABLE;
+  ALTER TABLE "AUTORACLE"."EXAMEN" ADD CONSTRAINT "EXAMEN_MANTENIMIENTO_FK" FOREIGN KEY ("MANTENIMIENTO_IDSERVICIO")
+	  REFERENCES "AUTORACLE"."MANTENIMIENTO" ("IDSERVICIO") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table FACTURA
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."FACTURA" ADD CONSTRAINT "FACTURA_CLIENTE_FK" FOREIGN KEY ("CLIENTE_IDCLIENTE")
+	  REFERENCES "AUTORACLE"."CLIENTE" ("IDCLIENTE") ENABLE;
+  ALTER TABLE "AUTORACLE"."FACTURA" ADD CONSTRAINT "FACTURA_EMPLEADO_FK" FOREIGN KEY ("EMPLEADO_IDEMPLEADO")
+	  REFERENCES "AUTORACLE"."EMPLEADO" ("IDEMPLEADO") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table LOTE
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."LOTE" ADD CONSTRAINT "LOTE_COMPRA_FK" FOREIGN KEY ("COMPRA_IDCOMPRA")
+	  REFERENCES "AUTORACLE"."COMPRA" ("IDCOMPRA") ENABLE;
+  ALTER TABLE "AUTORACLE"."LOTE" ADD CONSTRAINT "LOTE_PIEZA_FK" FOREIGN KEY ("PIEZA_CODREF")
+	  REFERENCES "AUTORACLE"."PIEZA" ("CODREF") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table MANTENIMIENTO
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."MANTENIMIENTO" ADD CONSTRAINT "MANTENIMIENTO_SERVICIO_FK" FOREIGN KEY ("IDSERVICIO")
+	  REFERENCES "AUTORACLE"."SERVICIO" ("IDSERVICIO") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table MODELO
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."MODELO" ADD CONSTRAINT "MODELO_MARCA_FK" FOREIGN KEY ("MARCA_IDMARCA")
+	  REFERENCES "AUTORACLE"."MARCA" ("IDMARCA") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table PIEZA
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."PIEZA" ADD CONSTRAINT "PIEZA_PROVEEDOR_FK" FOREIGN KEY ("PROVEEDOR_NIF")
+	  REFERENCES "AUTORACLE"."PROVEEDOR" ("NIF") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table PROVEE
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."PROVEE" ADD CONSTRAINT "PROVEE_PIEZA_FK" FOREIGN KEY ("PIEZA_CODREF")
+	  REFERENCES "AUTORACLE"."PIEZA" ("CODREF") ENABLE;
+  ALTER TABLE "AUTORACLE"."PROVEE" ADD CONSTRAINT "PROVEE_PROVEEDOR_FK" FOREIGN KEY ("PROVEEDOR_NIF")
+	  REFERENCES "AUTORACLE"."PROVEEDOR" ("NIF") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table REPARACION
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."REPARACION" ADD CONSTRAINT "REPARACION_SERVICIO_FK" FOREIGN KEY ("IDSERVICIO")
+	  REFERENCES "AUTORACLE"."SERVICIO" ("IDSERVICIO") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table REQUIERE
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."REQUIERE" ADD CONSTRAINT "REQUIERE_EXAMEN_FK" FOREIGN KEY ("EXAMEN_CATEGORIA_IDCATEGORIA")
+	  REFERENCES "AUTORACLE"."EXAMEN" ("CATEGORIA_IDCATEGORIA") ENABLE;
+  ALTER TABLE "AUTORACLE"."REQUIERE" ADD CONSTRAINT "REQUIERE_PIEZA_FK" FOREIGN KEY ("PIEZA_CODREF")
+	  REFERENCES "AUTORACLE"."PIEZA" ("CODREF") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table SERVICIO
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."SERVICIO" ADD CONSTRAINT "SERVICIO_VEHICULO_FK" FOREIGN KEY ("VEHICULO_NUMBASTIDOR")
+	  REFERENCES "AUTORACLE"."VEHICULO" ("NUMBASTIDOR") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table TRABAJA
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."TRABAJA" ADD CONSTRAINT "TRABAJA_EMPLEADO_FK" FOREIGN KEY ("EMPLEADO_IDEMPLEADO")
+	  REFERENCES "AUTORACLE"."EMPLEADO" ("IDEMPLEADO") ENABLE;
+  ALTER TABLE "AUTORACLE"."TRABAJA" ADD CONSTRAINT "TRABAJA_SERVICIO_FK" FOREIGN KEY ("SERVICIO_IDSERVICIO")
+	  REFERENCES "AUTORACLE"."SERVICIO" ("IDSERVICIO") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table VACACIONES
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."VACACIONES" ADD CONSTRAINT "VACACIONES_EMPLEADO_FK" FOREIGN KEY ("EMPLEADO_IDEMPLEADO")
+	  REFERENCES "AUTORACLE"."EMPLEADO" ("IDEMPLEADO") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table VEHICULO
+--------------------------------------------------------
+
+  ALTER TABLE "AUTORACLE"."VEHICULO" ADD CONSTRAINT "VEHICULO_CLIENTE_FK" FOREIGN KEY ("CLIENTE_IDCLIENTE")
+	  REFERENCES "AUTORACLE"."CLIENTE" ("IDCLIENTE") ENABLE;
+  ALTER TABLE "AUTORACLE"."VEHICULO" ADD CONSTRAINT "VEHICULO_MODELO_FK" FOREIGN KEY ("MODELO_IDMODELO", "MODELO_MARCA_IDMARCA")
+	  REFERENCES "AUTORACLE"."MODELO" ("IDMODELO", "MARCA_IDMARCA") ENABLE;
