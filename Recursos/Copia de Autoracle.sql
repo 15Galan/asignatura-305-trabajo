@@ -1,24 +1,29 @@
--- Reinicio del espacio de tablas del trabajo
+-- Borrar el espacio de tablas y el usuario (limpieza)
+DROP USER autoracle
+    CASCADE;
+
 DROP TABLESPACE ts_autoracle
     INCLUDING CONTENTS;
 
+
+-- Crear el espacio de tablas y el usuario para alojar la Base de Datos
 CREATE TABLESPACE ts_autoracle
     DATAFILE 'C:\USERS\APP\ALUMNOS\ORADATA\ORCL\autoracle.dbf'
     SIZE 16M
     AUTOEXTEND ON NEXT 200K
     MAXSIZE 128M;
 
-
--- Reinicio del usuario 'autoracle'
-DROP USER autoracle
-    CASCADE;
-
 CREATE USER autoracle
     IDENTIFIED BY autoracle
     DEFAULT TABLESPACE ts_autoracle
     QUOTA UNLIMITED ON ts_autoracle;
 
-GRANT CONNECT, CREATE TABLE, CREATE VIEW, CREATE MATERIALIZED VIEW
+GRANT
+    CREATE SESSION,
+    CREATE TABLE,
+    CREATE VIEW,
+    CREATE MATERIALIZED VIEW,
+    CREATE PROCEDURE
     TO AUTORACLE;
 
 
@@ -269,8 +274,8 @@ SET DEFINE OFF;
 Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('21','Junta de la culata');
 Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('23','Turbo');
 Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('6','Aceite');
-Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('7','Suspensi�n');
-Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('8','Alineaci�n');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('7','Suspension');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('8','Alineacion');
 Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('9','Frenos');
 Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('10','Cinturones de seguridad');
 Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('11','Aire acondicionado');
@@ -288,7 +293,7 @@ Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('1','Filtros');
 Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('2','Chapa');
 Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('3','Motor');
 Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('4','Electricidad');
-Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('5','Neum�ticos');
+Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('5','Neumaticos');
 Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('20','Limpiaparabrisas');
 Insert into AUTORACLE.CATEGORIA (IDCATEGORIA,NOMBRE) values ('22','Retrovisores');
 REM INSERTING into AUTORACLE.CITA
@@ -313,24 +318,24 @@ REM INSERTING into AUTORACLE.CLIENTE
 SET DEFINE OFF;
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('290','611765645','Pepe','Pepito','Pepon','pepe@pepon.es');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('200','678564565','Luis ','Barcenas',null,'luis@pp.es');
-Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('300','666786754','Juan','Mu�oz','Carrera','jmc@gmail.com');
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('300','666786754','Juan','Munoz','Carrera','jmc@gmail.com');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('50','698765612','Ana Mari','Zapata','Camello','anamari@gmail.com');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('12','685394323','Julio','Fernandez','Dias','eljuli@gmail.com');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('14','659234002','David','Broncano','Aguilera','davidBronca@gmail.com');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('236','654768997','Peter','Griffin',null,'PeterG@Quahog.com');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('789','789456123','Homer','Simpson',null,'simpsonh@spr.apu');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('16','777161011','Brandon','Sanderson',null,'sanderson@cosmere.god');
-Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('2222','666666666','Mar�a','Garc�a','S�nchez','maria@gmail.com');
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('2222','666666666','Maria','Garcia','Sanchez','maria@gmail.com');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('777','648246880','Samuel','de Luque','Batuecas','samu@ytmail.com');
-Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('545','711720845','Guillermo','Diaz','Iba�ez','willy@ytmail.com');
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('545','711720845','Guillermo','Diaz','Ibaez','willy@ytmail.com');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('420','675850648','Santiago','Abascal','Conde','santi@vox.es');
-Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('2','684384384','Pablo','Iglesias','Turr�n','iglesias@galapagar.es');
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('2','684384384','Pablo','Iglesias','Turron','iglesias@galapagar.es');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('3','686486878','Leticia','Trolera',null,'leticia@gmail.com');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('123','635571927','Juan','Cantero','Ruiz','juancr@gmail.com');
-Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('99','645187931','Marta','L�pez','Vega','marlove@gmail.com');
-Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('44','688098987','Maria','Sanchez','perez','maria@gmail.com');
-Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('22','672341298','Pedro','Arenales','Garc�a','pedroAG@gmail.com');
-Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('666','620181666','Elena','Garc�a','Castro','eleniita@gmail.com');
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('99','645187931','Marta','Lopez','Vega','marlove@gmail.com');
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('44','688098987','Maria','Sanchez','perez','mari@gmail.com');
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('22','672341298','Pedro','Arenales','Garcia','pedroAG@gmail.com');
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('666','620181666','Elena','Garcia','Castro','eleniita@gmail.com');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('13','644875236','Daniel','Algaba','Arcila','theemperor@hotmail.com');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('69','684872654','Joseph','Joestar',null,'theripple@hotmail.com');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('77','699677888','Elm','Cherto','Gallostra','sisplau@twitch.com');
@@ -341,11 +346,11 @@ Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMA
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('375','678345237','Rigoberto','Gonzaga','Ramirez','rigogonra@yahoo.es');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('788','648234512','Marge','Simpson',null,null);
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('790','648234512','Marge','Simpson',null,null);
-Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('465','679825713','Ju�n','Romero','Soto','juanito@gmail.com');
-Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('0404','687321002','Jaime','P�rez','Ramirez','JPR12@outloock.com');
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('465','679825713','Juan','Romero','Soto','juanito@gmail.com');
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('0404','687321002','Jaime','Perez','Ramirez','JPR12@outloock.com');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('42','601256688','Bryan','Israel',null,'fpjudea@gmail.com');
 Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('8','617802055','Lucia','Sanz','Perez','lucilu88@gmail.com');
-Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('1','674342310','Rub�n','Salazar','Castillo','rsc@gmail.com');
+Insert into AUTORACLE.CLIENTE (IDCLIENTE,TELEFONO,NOMBRE,APELLIDO1,APELLIDO2,EMAIL) values ('1','674342310','Ruben','Salazar','Castillo','rsc@gmail.com');
 REM INSERTING into AUTORACLE.COMPATIBLE
 SET DEFINE OFF;
 Insert into AUTORACLE.COMPATIBLE (PIEZA_CODREF,MODELO_IDMODELO,MODELO_IDMARCA) values ('111240','28','5');
@@ -428,10 +433,10 @@ Insert into AUTORACLE.FACTURA (IDFACTURA,CLIENTE_IDCLIENTE,IVA,FECEMISION,DESCUE
 Insert into AUTORACLE.FACTURA (IDFACTURA,CLIENTE_IDCLIENTE,IVA,FECEMISION,DESCUENTO,EMPLEADO_IDEMPLEADO) values ('8','8','21',to_date('12/04/20','DD/MM/RR'),'30','140');
 REM INSERTING into AUTORACLE.LOTE
 SET DEFINE OFF;
-Insert into AUTORACLE.LOTE ("N�MERO_DE_PIEZAS",PIEZA_CODREF,COMPRA_IDCOMPRA,IVA) values ('15','1234','3','21');
-Insert into AUTORACLE.LOTE ("N�MERO_DE_PIEZAS",PIEZA_CODREF,COMPRA_IDCOMPRA,IVA) values ('5','227562','1','21');
-Insert into AUTORACLE.LOTE ("N�MERO_DE_PIEZAS",PIEZA_CODREF,COMPRA_IDCOMPRA,IVA) values ('10','12345','4','21');
-Insert into AUTORACLE.LOTE ("N�MERO_DE_PIEZAS",PIEZA_CODREF,COMPRA_IDCOMPRA,IVA) values ('8','111235','2','21');
+Insert into AUTORACLE.LOTE ("NUMERO_DE_PIEZAS",PIEZA_CODREF,COMPRA_IDCOMPRA,IVA) values ('15','1234','3','21');
+Insert into AUTORACLE.LOTE ("NUMERO_DE_PIEZAS",PIEZA_CODREF,COMPRA_IDCOMPRA,IVA) values ('5','227562','1','21');
+Insert into AUTORACLE.LOTE ("NUMERO_DE_PIEZAS",PIEZA_CODREF,COMPRA_IDCOMPRA,IVA) values ('10','12345','4','21');
+Insert into AUTORACLE.LOTE ("NUMERO_DE_PIEZAS",PIEZA_CODREF,COMPRA_IDCOMPRA,IVA) values ('8','111235','2','21');
 REM INSERTING into AUTORACLE.MANTENIMIENTO
 SET DEFINE OFF;
 Insert into AUTORACLE.MANTENIMIENTO (IDSERVICIO,FECPROXREVISION) values ('221',to_date('17/02/21','DD/MM/RR'));
@@ -543,14 +548,14 @@ Insert into AUTORACLE.PROVEE (PROVEEDOR_NIF,PIEZA_CODREF) values ('mi20204','111
 Insert into AUTORACLE.PROVEE (PROVEEDOR_NIF,PIEZA_CODREF) values ('t389544','12326');
 REM INSERTING into AUTORACLE.PROVEEDOR
 SET DEFINE OFF;
-Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c258537','655758595','Ib��ez S.L.','mortadelo@filemon.es','13, Rue del Percebe','29713','mortadelo-filemon.es');
-Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('t82832','942321234','Open Chasis S.L','chasisabiertos@mas.com','C/ Espa�a 32','29008','chasisaunmasabiertos.cha');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c258537','655758595','Ibaez S.L.','mortadelo@filemon.es','13, Rue del Percebe','29713','mortadelo-filemon.es');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('t82832','942321234','Open Chasis S.L','chasisabiertos@mas.com','C/ Espana 32','29008','chasisaunmasabiertos.cha');
 Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c745269','9018523','Caballo S.L.','ventas@caballo.xyz',null,null,'caballo.xyz');
 Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c806764','7550822','Residente S.L','ingenio@lmao.com','C/ 13',null,'residente.xxx');
 Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c4568731','353040036','Criss S.L','cristi3009@hotmail.es','C/Alameda 23','29006','gatita.es');
 Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('a1234','676565432','Union S.L','info@union.es','Avenida Velazquez 20','29004','union.es');
 Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c564218','731895467','Costa del Sol','costaSol@gmail.com','c/Horacio lengo 45','29006','CostaDelSol.com');
-Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('t389544','951454721','Porrazos S.A.','porrazos@prz.es','C/Marqu�s de Larios 8','29018','porrazosymas.com');
+Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('t389544','951454721','Porrazos S.A.','porrazos@prz.es','C/Marques de Larios 8','29018','porrazosymas.com');
 Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('a123456','542368956','CocheListo S:L','cochelisto@sol.es','Av. Novigrado','29601','cochelisto.com');
 Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('c123312','9524567','Rompetechos S.A.','info@rompetechos.es',null,null,null);
 Insert into AUTORACLE.PROVEEDOR (NIF,TELEFONO,NOMBRE,EMAIL,DIRECCION,CODPOSTAL,WEB) values ('g456723','987653456','Uno mas S.A.','info@unomas.es','C/ accidentada','29876','unomas.es');
