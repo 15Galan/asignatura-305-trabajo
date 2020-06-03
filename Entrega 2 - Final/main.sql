@@ -142,3 +142,55 @@ ALTER TABLE autoracle.vehiculo                  -- IDEA: Formato de matricula
         CHECK (fabricacion >= 0)
     ADD CONSTRAINT check_vehiculo_kilometrajes
         CHECK (kilometraje >= 0);
+
+
+
+        --- Vistas
+        CREATE OR REPLACE
+            VIEW autoracle.v_proveedorespiezas AS (
+                SELECT
+                    Pi.nombre AS pieza,
+                    Pi.preciounidadventa AS "PRECIO VENTA",
+                    Pi.preciounidadcompra AS "PRECIO COMPRA",
+                    Pr.nombre AS proveedor,
+                    Pr.email AS email,
+                    Pr.telefono AS telefono,
+                    Pr.direccion AS direccion,
+                    Pr.web AS web
+
+                    FROM autoracle.pieza Pi
+                        JOIN autoracle.proveedor Pr ON Pi.proveedor_nif = Pr.nif
+                    );
+
+        CREATE OR REPLACE
+            VIEW autoracle.v_clientefidelizado AS (
+                SELECT
+                    C.idcliente AS id,
+                    C.usuario AS usuario,
+                    C.nombre AS nombre,
+                    C.apellido1 AS "PRIMER APELLIDO",
+                    C.APELLIDO2 AS "SEGUNDO APELLIDO",
+                    C.telefono AS telefono,
+                    C.email AS email,
+                    F.descuento AS descuento,
+                    F.anno AS anno
+
+                    FROM autoracle.cliente C
+                        JOIN autoracle.fidelizacion F ON C.idcliente LIKE F.cliente_idcliente
+            );
+
+        GRANT SELECT
+            ON autoracle.v_proveedorespiezas
+            TO r_administrativo;
+
+        GRANT SELECT
+            ON autoracle.v_clientefidelizado
+            TO r_administrativo;
+
+        GRANT SELECT
+            ON autoracle.v_proveedorespiezas
+            TO r_mecanico;
+
+        GRANT SELECT
+            ON autoracle.v_clientefidelizado
+            TO r_mecanico;
