@@ -145,52 +145,76 @@ ALTER TABLE autoracle.vehiculo                  -- IDEA: Formato de matricula
 
 
 
-        --- Vistas
-        CREATE OR REPLACE
-            VIEW autoracle.v_proveedorespiezas AS (
-                SELECT
-                    Pi.nombre AS pieza,
-                    Pi.preciounidadventa AS "PRECIO VENTA",
-                    Pi.preciounidadcompra AS "PRECIO COMPRA",
-                    Pr.nombre AS proveedor,
-                    Pr.email AS email,
-                    Pr.telefono AS telefono,
-                    Pr.direccion AS direccion,
-                    Pr.web AS web
+--- Vistas
+CREATE OR REPLACE
+    VIEW autoracle.v_proveedorespiezas AS (
+        SELECT
+            Pi.nombre AS pieza,
+            Pi.preciounidadventa AS "PRECIO VENTA",
+            Pi.preciounidadcompra AS "PRECIO COMPRA",
+            Pr.nombre AS proveedor,
+            Pr.email AS email,
+            Pr.telefono AS telefono,
+            Pr.direccion AS direccion,
+            Pr.web AS web
 
-                    FROM autoracle.pieza Pi
-                        JOIN autoracle.proveedor Pr ON Pi.proveedor_nif = Pr.nif
-                    );
-
-        CREATE OR REPLACE
-            VIEW autoracle.v_clientefidelizado AS (
-                SELECT
-                    C.idcliente AS id,
-                    C.usuario AS usuario,
-                    C.nombre AS nombre,
-                    C.apellido1 AS "PRIMER APELLIDO",
-                    C.APELLIDO2 AS "SEGUNDO APELLIDO",
-                    C.telefono AS telefono,
-                    C.email AS email,
-                    F.descuento AS descuento,
-                    F.anno AS anno
-
-                    FROM autoracle.cliente C
-                        JOIN autoracle.fidelizacion F ON C.idcliente LIKE F.cliente_idcliente
+            FROM autoracle.pieza Pi
+                JOIN autoracle.proveedor Pr ON Pi.proveedor_nif = Pr.nif
             );
 
-        GRANT SELECT
-            ON autoracle.v_proveedorespiezas
-            TO r_administrativo;
+CREATE OR REPLACE
+    VIEW autoracle.v_clientefidelizado AS (
+        SELECT
+            C.idcliente AS id,
+            C.usuario AS usuario,
+            C.nombre AS nombre,
+            C.apellido1 AS "PRIMER APELLIDO",
+            C.APELLIDO2 AS "SEGUNDO APELLIDO",
+            C.telefono AS telefono,
+            C.email AS email,
+            F.descuento AS descuento,
+            F.anno AS anno
 
-        GRANT SELECT
-            ON autoracle.v_clientefidelizado
-            TO r_administrativo;
+            FROM autoracle.cliente C
+                JOIN autoracle.fidelizacion F ON C.idcliente LIKE F.cliente_idcliente
+    );
 
-        GRANT SELECT
-            ON autoracle.v_proveedorespiezas
-            TO r_mecanico;
+GRANT SELECT
+    ON autoracle.v_proveedorespiezas
+    TO r_administrativo;
 
-        GRANT SELECT
-            ON autoracle.v_clientefidelizado
-            TO r_mecanico;
+GRANT SELECT
+    ON autoracle.v_clientefidelizado
+    TO r_administrativo;
+
+GRANT SELECT
+    ON autoracle.v_proveedorespiezas
+    TO r_mecanico;
+
+GRANT SELECT
+    ON autoracle.v_clientefidelizado
+    TO r_mecanico;
+
+
+
+-- Perfiles
+CREATE PROFILE per_administrador
+    LIMIT SESSIONS_PER_USER 1
+    CONNECT_TIME UNLIMITED
+    IDLE_TIME 10
+    FAILED_LOGIN_ATTEMPTS 3
+    PASSWORD_LIFE_TIME 365;
+
+CREATE PROFILE per_mecanico
+    LIMIT SESSIONS_PER_USER 2
+    CONNECT_TIME UNLIMITED
+    IDLE_TIME 10
+    FAILED_LOGIN_ATTEMPTS 3
+    PASSWORD_LIFE_TIME 180;
+
+CREATE PROFILE per_cliente
+    LIMIT SESSIONS_PER_USER 1
+    CONNECT_TIME 60
+    IDLE_TIME 5
+    FAILED_LOGIN_ATTEMPTS 3
+    PASSWORD_LIFE_TIME 180;
