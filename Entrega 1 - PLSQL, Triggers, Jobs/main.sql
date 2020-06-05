@@ -150,22 +150,22 @@ END;
 
 /* [4]
 Necesitamos una vista denominada V_IVA_CUATRIMESTRE con los atributos AÑO,
-TRIMESTRE, IVA_TOTAL siendo trimestre un numero de 1 a 4. El IVA_TOTAL es el IVA
+CUATRIMESTRE, IVA_TOTAL siendo trimestre un numero de 1 a 4. El IVA_TOTAL es el IVA
 devengado (suma del IVA de las facturas de ese trimestre).
 Dar permiso de seleccion a los Administrativos.
 */
 
 CREATE OR REPLACE
-    VIEW AUTORACLE.V_IVA_TRIMESTRE AS
+    VIEW AUTORACLE.V_IVA_CUATRIMESTRE AS
         SELECT  TO_CHAR(f.FECEMISION, 'YYYY') AS "ANNO",
-                TO_CHAR(f.FECEMISION, 'Q') AS "TRIMESTRE",
+                TO_CHAR(f.FECEMISION, 'Q') AS "CUATRIMESTRE",
                 (f.IVA / 100) * SUM(p.PRECIOUNIDADVENTA) AS IVA_DEVANGADO
             FROM AUTORACLE.factura f
                 JOIN AUTORACLE.contiene c ON f.IDFACTURA = c.FACTURA_IDFACTURA
                 JOIN AUTORACLE.pieza p ON p.CODREF = c.PIEZA_CODREF
                 GROUP BY TO_CHAR(f.FECEMISION, 'YYYY'), TO_CHAR(f.FECEMISION, 'Q'), f.IVA;
 
-GRANT SELECT ON AUTORACLE.V_IVA_TRIMESTRE
+GRANT SELECT ON AUTORACLE.V_IVA_CUATRIMESTRE
     TO R_ADMINISTRATIVO;
 
 
@@ -549,6 +549,7 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
         DBMS_OUTPUT.PUT_LINE('ID: ' || identificacion);
 
         EXECUTE IMMEDIATE sentencia;
+        EXECUTE IMMEDIATE 'GRANT R_MECANICO TO ' || username;
     END;
 
 
