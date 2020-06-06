@@ -290,14 +290,18 @@ UPDATE EMPLEADO
 
 BEGIN
     -- source: https://www.vortexmag.net/12-portugueses-conhecidos-em-todo-o-mundo/
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Joao', 'Pessoa', 'DaSilva');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Amalia', 'Pessoa', 'Rodrigues');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Vasco', 'Pessoa', 'DaGama');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Jose', 'Pessoa', 'Mourinho');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Sara', 'Pessoa', 'Sampaio');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Joao', 'Pessoa', 'DaSilva','MECANICO');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Amalia', 'Pessoa', 'Rodrigues','ADMINISTRATIVO');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Vasco', 'Pessoa', 'DaGama',null);
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Jose', 'Pessoa', 'Mourinho',null);
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Sara', 'Pessoa', 'Sampaio',null);
 END;
 /
-
+--select * from all_users;
+--drop user JOAO_PESSOA_DASILVA;
+--drop user AMALIA_PESSOA_RODRIGUES;
+--drop user VASCO_PESSOA_DAGAMA;
+--drop user JOSE_PESSOA_MOURINHO;
 BEGIN
     PKG_GESTION_EMPLEADOS.PR_MODIFICAR_EMPLEADO(
         sec_idempleado.CURRVAL, -- el ID del ultimo empleado creado
@@ -319,43 +323,32 @@ BEGIN
         1,
         0,
         0,
-        'PreZidenta',
+        'ADMINISTRATIVO',
         0);
 END;
 /
 
 BEGIN
-    PKG_GESTION_EMPLEADOS.PR_BLOQUEAR_USUARIO('Sara', 'Pessoa', 'Sampaio');
+    PKG_GESTION_EMPLEADOS.PR_BLOQUEAR_USUARIO('SARA_PESSOA_SAMPAIO');
 END;
 /
 
 BEGIN
-    PKG_GESTION_EMPLEADOS.PR_DESBLOQUEAR_USUARIO('Sara', 'Pessoa', 'Sampaio');
+    PKG_GESTION_EMPLEADOS.PR_DESBLOQUEAR_USUARIO('SARA_PESSOA_SAMPAIO');
 END;
 /
 
 BEGIN
-    -- no funcionara si algun empleado en la tabla EMPLEADO no tiene usuario creado :(
     PKG_GESTION_EMPLEADOS.PR_BLOQUEAR_TODOS_EMPLEADOS;
 END;
 /
 
 BEGIN
-    -- no funcionara si algun empleado en la tabla EMPLEADO no tiene usuario creado :(
     PKG_GESTION_EMPLEADOS.PR_DESBLOQUEAR_TODOS_EMPLEADOS;
 END;
 /
 
 BEGIN
     PKG_GESTION_EMPLEADOS.PR_BORRAR_EMPLEADO(sec_idempleado.CURRVAL);
-END;
-/
-BEGIN
-    -- source: https://www.vortexmag.net/12-portugueses-conhecidos-em-todo-o-mundo/
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Joao', 'Pessoa', 'DaSilva');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Amalia', 'Pessoa', 'Rodrigues');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Vasco', 'Pessoa', 'DaGama');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Jose', 'Pessoa', 'Mourinho');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Sara', 'Pessoa', 'Sampaio');
 END;
 /
