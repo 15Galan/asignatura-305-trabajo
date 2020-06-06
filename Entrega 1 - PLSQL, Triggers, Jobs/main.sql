@@ -51,6 +51,13 @@ GRANT SELECT ON autoracle.pieza TO r_mecanico;
 GRANT SELECT ON autoracle.provee TO r_mecanico;
 GRANT SELECT ON autoracle.proveedor TO r_mecanico;
 
+GRANT CREATE USER TO autoracle;
+GRANT DROP USER TO autoracle;
+GRANT ALTER USER TO autoracle;
+GRANT r_cliente TO autoracle WITH ADMIN OPTION;
+GRANT r_mecanico TO autoracle WITH ADMIN OPTION;
+GRANT r_administrativo TO autoracle WITH ADMIN OPTION;
+
 -- Al final del script se generan vistas para los roles
 
 
@@ -501,7 +508,8 @@ CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
     PROCEDURE PR_CREAR_EMPLEADO(
         nombre EMPLEADO.NOMBRE%TYPE,
         ap1 EMPLEADO.APELLIDO1%TYPE,
-        ap2 EMPLEADO.APELLIDO2%TYPE );
+        ap2 EMPLEADO.APELLIDO2%TYPE,
+        pos EMPLEADO.PUESTO%TYPE);
     PROCEDURE PR_BORRAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE );
     PROCEDURE PR_MODIFICAR_EMPLEADO(
         ide EMPLEADO.IDEMPLEADO%TYPE,
@@ -515,13 +523,9 @@ CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
         pos EMPLEADO.PUESTO%TYPE,
         ret EMPLEADO.RETENCIONES%TYPE );
     PROCEDURE PR_BLOQUEAR_USUARIO(
-        nombre EMPLEADO.NOMBRE%TYPE,
-        ap1 EMPLEADO.APELLIDO1%TYPE,
-        ap2 EMPLEADO.APELLIDO2%TYPE );
+        usuario EMPLEADO.USUARIO%TYPE );
     PROCEDURE PR_DESBLOQUEAR_USUARIO(
-        nombre EMPLEADO.NOMBRE%TYPE,
-        ap1 EMPLEADO.APELLIDO1%TYPE,
-        ap2 EMPLEADO.APELLIDO2%TYPE );
+        usuario EMPLEADO.USUARIO%TYPE );
     PROCEDURE PR_BLOQUEAR_TODOS_EMPLEADOS;
     PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS;
 END;
@@ -532,7 +536,8 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
     PROCEDURE PR_CREAR_EMPLEADO(
         nombre EMPLEADO.NOMBRE%TYPE,
         ap1 EMPLEADO.APELLIDO1%TYPE,
-        ap2 EMPLEADO.APELLIDO2%TYPE )
+        ap2 EMPLEADO.APELLIDO2%TYPE,
+        pos EMPLEADO.PUESTO%TYPE)
     AS
         identificacion NUMBER := sec_idempleado.NEXTVAL;
         username ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
@@ -542,22 +547,26 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
                                     username ||
                                     ' DEFAULT TABLESPACE TS_AUTORACLE';
     BEGIN
-        INSERT INTO EMPLEADO(IDEMPLEADO, NOMBRE, APELLIDO1, APELLIDO2, FECENTRADA, DESPEDIDO, SUELDOBASE)
-            VALUES(identificacion, nombre, ap1, ap2, sysdate, 0, 1500);
+        INSERT INTO EMPLEADO(IDEMPLEADO, NOMBRE, APELLIDO1, APELLIDO2, FECENTRADA, DESPEDIDO, SUELDOBASE, PUESTO, USUARIO)
+            VALUES(identificacion, nombre, ap1, ap2, sysdate, 0, 1500, pos, username);
 
         DBMS_OUTPUT.PUT_LINE(sentencia);
         DBMS_OUTPUT.PUT_LINE('ID: ' || identificacion);
 
         EXECUTE IMMEDIATE sentencia;
-        EXECUTE IMMEDIATE 'GRANT R_MECANICO TO ' || username;
+        IF UPPER(pos) = 'MECANICO' THEN
+            EXECUTE IMMEDIATE 'GRANT R_MECANICO TO ' || username;
+        ELSIF UPPER(pos) = 'ADMINISTRATIVO' THEN
+            EXECUTE IMMEDIATE 'GRANT R_ADMINISTRATIVO TO ' || username;
+        END IF;
     END;
 
 
     PROCEDURE PR_BORRAR_EMPLEADO(ide EMPLEADO.IDEMPLEADO%TYPE) IS
-        usuario EMPLEADO.NOMBRE%TYPE;
+        usuario EMPLEADO.USUARIO%TYPE;
         sentencia VARCHAR2(500);
     BEGIN
-        SELECT UPPER(NOMBRE) || '_' || UPPER(APELLIDO1) || '_' || UPPER(APELLIDO2)
+        SELECT UPPER(usuario)
             INTO usuario
             FROM autoracle.EMPLEADO
             WHERE IDEMPLEADO = ide;
@@ -585,6 +594,7 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
         ret EMPLEADO.RETENCIONES%TYPE )
     AS
         des_mal EXCEPTION;
+        username EMPLEADO.USUARIO%TYPE;
     BEGIN
         IF ( (des > 1) OR (des < 0) ) then
             RAISE des_mal;
@@ -602,7 +612,17 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
             RETENCIONES = ret
         WHERE
             IDEMPLEADO = ide;
-
+        
+        SELECT e.usuario into username from EMPLEADO e WHERE e.IDEMPLEADO=ide;
+        
+        IF UPPER(pos) = 'MECANICO' THEN
+            EXECUTE IMMEDIATE 'REVOKE R_ADMINISTRATIVO TO ' || username;
+            EXECUTE IMMEDIATE 'GRANT R_MECANICO TO ' || username;
+        ELSIF UPPER(pos) = 'ADMINISTRATIVO' THEN
+            EXECUTE IMMEDIATE 'REVOKE R_MECANICO TO ' || username;
+            EXECUTE IMMEDIATE 'GRANT R_ADMINISTRATIVO TO ' || username;
+        END IF;
+    
     EXCEPTION
         WHEN des_mal THEN
             DBMS_OUTPUT.PUT_LINE('Valor de "Despido" incorrecto (ingrese 0 o 1)');
@@ -611,27 +631,21 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
             Introduce (IDEmpleado, Despido, Sueldo Base, Puesto, Horas, Retenciones)');
     END;
 
-    -- Deberia de ser con (Nombre, Ap1, Ap2) o con (Ide) ????
     PROCEDURE PR_BLOQUEAR_USUARIO(
-        nombre EMPLEADO.NOMBRE%TYPE,
-        ap1 EMPLEADO.APELLIDO1%TYPE,
-        ap2 EMPLEADO.APELLIDO2%TYPE )
+        usuario EMPLEADO.USUARIO%TYPE)
     AS
-        usuario ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
-        sentencia VARCHAR2(500) := 'ALTER USER ' || usuario || ' ACCOUNT LOCK';
+        --usuario ALL_USERS.USERNAME%TYPE := UPPER(usuario);
+        sentencia VARCHAR2(500) := 'ALTER USER ' || UPPER(usuario) || ' ACCOUNT LOCK';
     BEGIN
         -- DBMS_OUTPUT.PUT_LINE(sentencia);
         EXECUTE IMMEDIATE sentencia;
     END;
 
-    -- Deberia de ser con (Nombre, Ap1, Ap2) o con (Ide) ????
     PROCEDURE PR_DESBLOQUEAR_USUARIO(
-        nombre EMPLEADO.NOMBRE%TYPE,
-        ap1 EMPLEADO.APELLIDO1%TYPE,
-        ap2 EMPLEADO.APELLIDO2%TYPE )
+        usuario EMPLEADO.USUARIO%TYPE)
     AS
-        usuario ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
-        sentencia VARCHAR2(500) := 'ALTER USER ' || usuario || ' ACCOUNT UNLOCK';
+        --usuario ALL_USERS.USERNAME%TYPE := UPPER(usuario);
+        sentencia VARCHAR2(500) := 'ALTER USER ' || UPPER(usuario) || ' ACCOUNT UNLOCK';
 
     BEGIN
         -- DBMS_OUTPUT.PUT_LINE(sentencia);
@@ -642,7 +656,7 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
     PROCEDURE PR_BLOQUEAR_TODOS_EMPLEADOS AS
         sentencia VARCHAR(500);
         CURSOR empleados IS
-            SELECT UPPER(NOMBRE) || '_' || UPPER(APELLIDO1) || '_' || UPPER(APELLIDO2) AS USUARIO
+            SELECT USUARIO
             FROM autoracle.EMPLEADO
                 WHERE usuario IS NOT NULL;
 
@@ -657,7 +671,7 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
     PROCEDURE PR_DESBLOQUEAR_TODOS_EMPLEADOS AS
         sentencia VARCHAR(500);
         CURSOR empleados IS
-            SELECT UPPER(NOMBRE) || '_' || UPPER(APELLIDO1) || '_' || UPPER(APELLIDO2) AS USUARIO
+            SELECT USUARIO
                 FROM autoracle.EMPLEADO
                     WHERE usuario IS NOT NULL;
 
@@ -669,6 +683,8 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
     END;
 END;
 /
+
+
 
 
 
