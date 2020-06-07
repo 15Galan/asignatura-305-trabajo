@@ -1602,7 +1602,8 @@ CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
         nombre EMPLEADO.NOMBRE%TYPE,
         ap1 EMPLEADO.APELLIDO1%TYPE,
         ap2 EMPLEADO.APELLIDO2%TYPE,
-        pos EMPLEADO.PUESTO%TYPE);
+        pos EMPLEADO.PUESTO%TYPE,
+        username EMPLEADO.USUARIO%TYPE);
     PROCEDURE PR_BORRAR_EMPLEADO( ide EMPLEADO.IDEMPLEADO%TYPE );
     PROCEDURE PR_MODIFICAR_EMPLEADO(
         ide EMPLEADO.IDEMPLEADO%TYPE,
@@ -1614,7 +1615,8 @@ CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_EMPLEADOS AS
         sueldo EMPLEADO.SUELDOBASE%TYPE,
         horas EMPLEADO.HORAS%TYPE,
         pos EMPLEADO.PUESTO%TYPE,
-        ret EMPLEADO.RETENCIONES%TYPE );
+        ret EMPLEADO.RETENCIONES%TYPE,
+        username EMPLEADO.USUARIO%TYPE);
     PROCEDURE PR_BLOQUEAR_USUARIO(
         usuario EMPLEADO.USUARIO%TYPE );
     PROCEDURE PR_DESBLOQUEAR_USUARIO(
@@ -1630,23 +1632,23 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
         nombre EMPLEADO.NOMBRE%TYPE,
         ap1 EMPLEADO.APELLIDO1%TYPE,
         ap2 EMPLEADO.APELLIDO2%TYPE,
-        pos EMPLEADO.PUESTO%TYPE)
+        pos EMPLEADO.PUESTO%TYPE,
+        username EMPLEADO.USUARIO%TYPE)
     AS
         identificacion NUMBER := sec_idempleado.NEXTVAL;
-        username ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
-        sentencia VARCHAR2(500) := 'CREATE USER ' ||
-                                    username ||
-                                    ' IDENTIFIED BY ' ||
-                                    username ||
-                                    ' DEFAULT TABLESPACE TS_AUTORACLE';
+       -- username ALL_USERS.USERNAME%TYPE := UPPER(nombre) || '_' || UPPER(ap1) || '_' || UPPER(ap2);
+        sentencia VARCHAR2(500);
     BEGIN
         INSERT INTO EMPLEADO(IDEMPLEADO, NOMBRE, APELLIDO1, APELLIDO2, FECENTRADA, DESPEDIDO, SUELDOBASE, PUESTO, USUARIO)
             VALUES(identificacion, nombre, ap1, ap2, sysdate, 0, 1500, pos, username);
 
         DBMS_OUTPUT.PUT_LINE(sentencia);
         DBMS_OUTPUT.PUT_LINE('ID: ' || identificacion);
-
-        EXECUTE IMMEDIATE sentencia;
+        IF username IS NOT NULL THEN
+            sentencia := 'CREATE USER ' || username || ' IDENTIFIED BY ' || username || ' DEFAULT TABLESPACE TS_AUTORACLE';
+            EXECUTE IMMEDIATE sentencia;
+        END IF;
+        
         IF UPPER(pos) = 'MECANICO' THEN
             EXECUTE IMMEDIATE 'GRANT R_MECANICO TO ' || username;
         ELSIF UPPER(pos) = 'ADMINISTRATIVO' THEN
@@ -1663,11 +1665,10 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
             INTO usuario
             FROM autoracle.EMPLEADO
             WHERE IDEMPLEADO = ide;
-
-        sentencia := 'DROP USER ' || usuario || ' CASCADE';
-
-        -- DBMS_OUTPUT.PUT_LINE(sentencia);
-        EXECUTE IMMEDIATE sentencia;
+        IF usuario IS NOT NULL THEN
+            sentencia := 'DROP USER ' || usuario || ' CASCADE';
+            EXECUTE IMMEDIATE sentencia;
+        END IF;
 
         DELETE FROM autoracle.EMPLEADO
             WHERE IDEMPLEADO = ide;
@@ -1684,15 +1685,22 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
         sueldo EMPLEADO.SUELDOBASE%TYPE,
         horas EMPLEADO.HORAS%TYPE,
         pos EMPLEADO.PUESTO%TYPE,
-        ret EMPLEADO.RETENCIONES%TYPE )
+        ret EMPLEADO.RETENCIONES%TYPE,
+        username EMPLEADO.USUARIO%TYPE)
     AS
         des_mal EXCEPTION;
-        username EMPLEADO.USUARIO%TYPE;
+        u EMPLEADO.USUARIO%TYPE;
+        sentencia VARCHAR2(100);
     BEGIN
         IF ( (des > 1) OR (des < 0) ) then
             RAISE des_mal;
         END IF;
-
+        SELECT e.usuario into u from EMPLEADO e WHERE e.IDEMPLEADO=ide;
+        IF username IS NOT NULL AND u IS NULL THEN
+            sentencia := 'CREATE USER ' || username || ' IDENTIFIED BY ' || username || ' DEFAULT TABLESPACE TS_AUTORACLE';
+            u := username;
+            EXECUTE IMMEDIATE sentencia;
+        END IF;
         UPDATE autoracle.EMPLEADO SET
             NOMBRE = nom,
             APELLIDO1 = ap1,
@@ -1702,20 +1710,21 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
             SUELDOBASE = sueldo,
             HORAS = horas,
             PUESTO = pos,
-            RETENCIONES = ret
+            RETENCIONES = ret,
+            USUARIO = u
         WHERE
             IDEMPLEADO = ide;
-
-        SELECT e.usuario into username from EMPLEADO e WHERE e.IDEMPLEADO=ide;
-
-        IF UPPER(pos) = 'MECANICO' THEN
-            EXECUTE IMMEDIATE 'REVOKE R_ADMINISTRATIVO FROM ' || username;
-            EXECUTE IMMEDIATE 'GRANT R_MECANICO TO ' || username;
-        ELSIF UPPER(pos) = 'ADMINISTRATIVO' THEN
-            EXECUTE IMMEDIATE 'REVOKE R_MECANICO FROM ' || username;
-            EXECUTE IMMEDIATE 'GRANT R_ADMINISTRATIVO TO ' || username;
+        
+        IF u IS NOT NULL  THEN
+            IF UPPER(pos) = 'MECANICO' THEN
+                EXECUTE IMMEDIATE 'REVOKE R_ADMINISTRATIVO FROM ' || u;
+                EXECUTE IMMEDIATE 'GRANT R_MECANICO TO ' || u;
+            ELSIF UPPER(pos) = 'ADMINISTRATIVO' THEN
+                EXECUTE IMMEDIATE 'REVOKE R_MECANICO FROM ' || u;
+                EXECUTE IMMEDIATE 'GRANT R_ADMINISTRATIVO TO ' || u;
+            END IF;
         END IF;
-
+    
     EXCEPTION
         WHEN des_mal THEN
             DBMS_OUTPUT.PUT_LINE('Valor de "Despido" incorrecto (ingrese 0 o 1)');
@@ -1776,7 +1785,6 @@ CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_EMPLEADOS AS
     END;
 END;
 /
-
 
 
 /* [8]

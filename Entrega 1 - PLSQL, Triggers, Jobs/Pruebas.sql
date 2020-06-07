@@ -290,11 +290,11 @@ UPDATE EMPLEADO
 
 BEGIN
     -- source: https://www.vortexmag.net/12-portugueses-conhecidos-em-todo-o-mundo/
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Joao', 'Pessoa', 'DaSilva','MECANICO');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Amalia', 'Pessoa', 'Rodrigues','ADMINISTRATIVO');
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Vasco', 'Pessoa', 'DaGama',null);
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Jose', 'Pessoa', 'Mourinho',null);
-    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Sara', 'Pessoa', 'Sampaio',null);
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Joao', 'Pessoa', 'DaSilva','MECANICO','JOAO_PESSOA_DASILVA');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Amalia', 'Pessoa', 'Rodrigues','ADMINISTRATIVO','AMALIA_PESSOA_RODRIGUES');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Vasco', 'Pessoa', 'DaGama',null,'VASCO_PESSOA_DAGAMA');
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Jose', 'Pessoa', 'Mourinho',null,null); -- No crea usuario
+    PKG_GESTION_EMPLEADOS.PR_CREAR_EMPLEADO('Sara', 'Pessoa', 'Sampaio',null,null);
 END;
 /
 --select * from all_users;
@@ -324,7 +324,8 @@ BEGIN
         0,
         0,
         'ADMINISTRATIVO',
-        0);
+        0,
+        'SARA_PESSOA_SAMPAIO'); -- Le crea un usuario
 END;
 /
 
