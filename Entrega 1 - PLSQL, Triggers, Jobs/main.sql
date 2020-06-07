@@ -938,3 +938,168 @@ GRANT SELECT ON autoracle.v_empleado_servicios TO r_mecanico;
 
 GRANT SELECT ON autoracle.v_cliente_datos TO r_cliente;
 GRANT SELECT ON autoracle.v_cliente_servicios TO r_cliente;
+
+-- Secuencia idclientes
+CREATE SEQUENCE autoracle.sec_idcliente
+    START WITH 10000
+    INCREMENT BY 1;
+		    
+-- Paquete para gestionar CLIENTES
+CREATE OR REPLACE PACKAGE AUTORACLE.PKG_GESTION_CLIENTES AS
+    PROCEDURE PR_CREAR_CLIENTE(
+        nombre CLIENTE.NOMBRE%TYPE,
+        ap1 CLIENTE.APELLIDO1%TYPE,
+        ap2 CLIENTE.APELLIDO2%TYPE,
+        telef CLIENTE.TELEFONO%TYPE,
+        email CLIENTE.EMAIL%TYPE,
+        username CLIENTE.USUARIO%TYPE);
+    PROCEDURE PR_BORRAR_CLIENTE( ide CLIENTE.IDCLIENTE%TYPE );
+    PROCEDURE PR_MODIFICAR_CLIENTE(
+        ide CLIENTE.IDCLIENTE%TYPE,
+        nom CLIENTE.NOMBRE%TYPE,
+        ap1 CLIENTE.APELLIDO1%TYPE,
+        ap2 CLIENTE.APELLIDO2%TYPE,
+        telef CLIENTE.TELEFONO%TYPE,
+        mail CLIENTE.EMAIL%TYPE,
+        username CLIENTE.USUARIO%TYPE);
+    PROCEDURE PR_BLOQUEAR_USUARIO(
+        usuario CLIENTE.USUARIO%TYPE );
+    PROCEDURE PR_DESBLOQUEAR_USUARIO(
+        usuario CLIENTE.USUARIO%TYPE );
+    PROCEDURE PR_BLOQUEAR_TODOS_CLIENTES;
+    PROCEDURE PR_DESBLOQUEAR_TODOS_CLIENTES;
+END;
+/
+
+CREATE OR REPLACE PACKAGE BODY AUTORACLE.PKG_GESTION_CLIENTES AS
+
+    PROCEDURE PR_CREAR_CLIENTE(
+        nombre CLIENTE.NOMBRE%TYPE,
+        ap1 CLIENTE.APELLIDO1%TYPE,
+        ap2 CLIENTE.APELLIDO2%TYPE,
+        telef CLIENTE.TELEFONO%TYPE,
+        email CLIENTE.EMAIL%TYPE,
+        username CLIENTE.USUARIO%TYPE)
+    AS
+        identificacion NUMBER;
+        sentencia VARCHAR2(500);
+    BEGIN
+        identificacion := sec_idcliente.NEXTVAL;
+        INSERT INTO CLIENTE(IDCLIENTE, NOMBRE, APELLIDO1, APELLIDO2, TELEFONO, EMAIL, USUARIO)
+            VALUES(identificacion, nombre, ap1, ap2, telef, email, username);
+
+        DBMS_OUTPUT.PUT_LINE('ID: ' || identificacion);
+        IF username IS NOT NULL THEN
+            sentencia := 'CREATE USER ' || username || ' IDENTIFIED BY ' || username || ' DEFAULT TABLESPACE TS_AUTORACLE';
+            DBMS_OUTPUT.PUT_LINE(sentencia);
+            EXECUTE IMMEDIATE sentencia;
+            EXECUTE IMMEDIATE 'GRANT R_CLIENTE TO ' || username;
+        END IF;
+        
+    END;
+
+
+    PROCEDURE PR_BORRAR_CLIENTE(ide CLIENTE.IDCLIENTE%TYPE) IS
+        usuario CLIENTE.USUARIO%TYPE;
+        sentencia VARCHAR2(500);
+    BEGIN
+        SELECT UPPER(usuario)
+            INTO usuario
+            FROM autoracle.CLIENTE
+            WHERE IDCLIENTE = ide;
+        IF usuario IS NOT NULL THEN
+            sentencia := 'DROP USER ' || usuario || ' CASCADE';
+            EXECUTE IMMEDIATE sentencia;
+        END IF;
+
+        DELETE FROM autoracle.CLIENTE
+            WHERE IDCLIENTE = ide;
+    END;
+
+
+    PROCEDURE PR_MODIFICAR_CLIENTE(
+        ide CLIENTE.IDCLIENTE%TYPE,
+        nom CLIENTE.NOMBRE%TYPE,
+        ap1 CLIENTE.APELLIDO1%TYPE,
+        ap2 CLIENTE.APELLIDO2%TYPE,
+        telef CLIENTE.TELEFONO%TYPE,
+        mail CLIENTE.EMAIL%TYPE,
+        username CLIENTE.USUARIO%TYPE)
+    AS
+        des_mal EXCEPTION;
+        u CLIENTE.USUARIO%TYPE;
+        sentencia VARCHAR2(100);
+    BEGIN
+        SELECT e.usuario into u from CLIENTE e WHERE e.IDCLIENTE=ide;
+        IF username IS NOT NULL AND u IS NULL THEN
+            sentencia := 'CREATE USER ' || username || ' IDENTIFIED BY ' || username || ' DEFAULT TABLESPACE TS_AUTORACLE';
+            u := username;
+            EXECUTE IMMEDIATE sentencia;
+            EXECUTE IMMEDIATE 'GRANT R_CLIENTE TO ' || u;
+        END IF;
+        UPDATE autoracle.CLIENTE SET
+            NOMBRE = nom,
+            APELLIDO1 = ap1,
+            APELLIDO2 = ap2,
+            TELEFONO = telef,
+            EMAIL = mail,
+            USUARIO = u
+        WHERE
+            IDCLIENTE = ide;
+        
+    
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Parametros incorrectos.
+            Introduce (IDCLIENTE, Apellido1, Apellido2, Email, Usuario)');
+    END;
+
+    PROCEDURE PR_BLOQUEAR_USUARIO(
+        usuario CLIENTE.USUARIO%TYPE)
+    AS
+        sentencia VARCHAR2(500) := 'ALTER USER ' || UPPER(usuario) || ' ACCOUNT LOCK';
+    BEGIN
+        EXECUTE IMMEDIATE sentencia;
+    END;
+
+    PROCEDURE PR_DESBLOQUEAR_USUARIO(
+        usuario CLIENTE.USUARIO%TYPE)
+    AS
+        sentencia VARCHAR2(500) := 'ALTER USER ' || UPPER(usuario) || ' ACCOUNT UNLOCK';
+
+    BEGIN
+        EXECUTE IMMEDIATE sentencia;
+    END;
+
+
+    PROCEDURE PR_BLOQUEAR_TODOS_CLIENTES AS
+        sentencia VARCHAR(500);
+        CURSOR CLIENTES IS
+            SELECT USUARIO
+            FROM autoracle.CLIENTE
+                WHERE usuario IS NOT NULL;
+
+    BEGIN
+        FOR emp IN CLIENTES LOOP
+            sentencia := 'ALTER USER ' || emp.USUARIO || ' ACCOUNT LOCK';
+            EXECUTE IMMEDIATE sentencia;
+        END LOOP;
+    END;
+
+
+    PROCEDURE PR_DESBLOQUEAR_TODOS_CLIENTES AS
+        sentencia VARCHAR(500);
+        CURSOR CLIENTES IS
+            SELECT USUARIO
+                FROM autoracle.CLIENTE
+                    WHERE usuario IS NOT NULL;
+
+    BEGIN
+        FOR emp IN CLIENTES LOOP
+            sentencia := 'ALTER USER ' || emp.USUARIO || ' ACCOUNT UNLOCK';
+            EXECUTE IMMEDIATE sentencia;
+        END LOOP;
+    END;
+END;
+/		    
+		    
